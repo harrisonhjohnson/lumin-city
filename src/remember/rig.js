@@ -175,9 +175,11 @@ function ground(m) {
   if (m.position.y <= floor) { if (!m.grounded) m.landed = m.air; m.position.y = floor; m.velocity.y = 0; m.grounded = true; m.air = 0; }
   else { m.grounded = false; }
 }
+// The player reaches the perimeter highways (the outer avenues at ±280), stopping at the quays.
+const PLAY_X = 296;
 function bounds(m) {
   const p = m.position;
-  p.x = THREE.MathUtils.clamp(p.x, WORLD.x[0], WORLD.x[1]);
+  p.x = THREE.MathUtils.clamp(p.x, -PLAY_X, PLAY_X);
   p.z = THREE.MathUtils.clamp(p.z, WORLD.z[0], WORLD.z[1]);
 }
 

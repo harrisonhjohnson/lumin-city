@@ -39,7 +39,7 @@ export const ERA_IDS = Object.keys(ERAS);
 
 export const SEASONS = {
   spring: { label: 'Spring', palette: { leaf: 0xe9a8c0, grass: 0x5e9a4a }, weathers: [['rain', 'April showers'], ['clear', 'Bright and clear']] },
-  summer: { label: 'Summer', palette: { leaf: 0x3f7d3a, grass: 0x4f8a3f }, weathers: [['clear', 'A heat wave'], ['rain', 'A thunderstorm']] },
+  summer: { label: 'Summer', palette: { leaf: 0x3f7d3a, grass: 0x4f8a3f }, weathers: [['heat', 'A heat wave'], ['rain', 'A thunderstorm']] },
   autumn: { label: 'Autumn', palette: { leaf: 0xd4702a, grass: 0x7d7a3a }, weathers: [['fog', 'Thick fog'], ['rain', 'Cold rain']] },
   winter: { label: 'Winter', palette: { leaf: 0xe6ecf0, grass: 0xdfe6ea, path: 0xcfd6da }, weathers: [['snow', 'Snowing'], ['clear', 'Crisp and clear']] },
 };

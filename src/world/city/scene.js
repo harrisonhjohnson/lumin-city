@@ -23,9 +23,10 @@ export function buildManhattan({ overrides = {}, look = DEFAULT_LOOK, time = DEF
   if (glow) fogColour.lerp(new THREE.Color(glow[0]), glow[1] * (1 - T.lit * 0.2));
   scene.background = new THREE.Color(T.background).lerp(fogColour, Wx.tint * 1.4);
   if (glow) scene.background.lerp(new THREE.Color(glow[0]), glow[2] ?? glow[1]);
+  if (Wx.sky) { fogColour.lerp(new THREE.Color(Wx.sky[0]), Wx.sky[1] * (1 - T.lit)); scene.background.lerp(new THREE.Color(Wx.sky[0]), Wx.sky[1] * (1 - T.lit)); }
   scene.fog = new THREE.FogExp2(fogColour, T.fogDensity * Wx.fog);
   scene.add(new THREE.HemisphereLight(...T.hemi));
-  const sun = new THREE.DirectionalLight(T.sun[0], T.sun[1] * (Wx.particles || Wx.fog > 1 ? 0.7 : 1)); sun.position.set(...T.sun[2]); scene.add(sun);
+  const sun = new THREE.DirectionalLight(new THREE.Color(T.sun[0]).lerp(new THREE.Color(0xffd29a), Wx.heat || 0), T.sun[1] * (Wx.particles || Wx.fog > 1 ? 0.7 : 1) * (1 + (Wx.heat || 0))); sun.position.set(...T.sun[2]); scene.add(sun);
 
   const materials = {};
   const mat = (name) => materials[name] ||= makeMaterial(name, palette, Wx.wet);
@@ -102,7 +103,9 @@ export function buildManhattan({ overrides = {}, look = DEFAULT_LOOK, time = DEF
 }
 
 const FACADE = /^facade\d$/;
-const SHORE = [-262, 300];   // west and east edges of the island, x
+// West and east edges of the island, x: past the outer avenues (±280, three lanes ±12 m) so the
+// perimeter highways have land under them, like the West Side Highway and the FDR.
+const SHORE = [-305, 305];
 
 // Facade walls paint their own windows: the grid comes from WINDOW (the same numbers the
 // boxes used to be placed with), lit or dark per window from a hash of its cell and the

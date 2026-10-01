@@ -30,6 +30,7 @@ export const LINES = {
   weather: {
     rain: 'Yes. The streets were shining with it.',
     clear: 'Yes. Not a cloud. You could see all the way across.',
+    heat: 'Yes. The tar went soft on the roofs and every hydrant on the block was open.',
     fog: 'Yes. You could barely see the end of the block.',
     snow: 'Yes. Everything went quiet under it.',
   },
@@ -44,12 +45,18 @@ export const LINES = {
 // World settings for a partial memory. `stage` counts answered layers: 1 city, 2 year,
 // 3 season + weather, 4 time of day. Unanswered layers stay as white clay in a white haze.
 export const HAZE = { label: 'Memory', background: 0xefe9dc, fog: 0xefe9dc, hemi: [0xffffff, 0xd8cfc0, 3.2], sun: [0xfff6e8, 1.6, [120, 300, 160]], lit: 0 };
-const HAZE_DENSITY = [0.012, 0.0075, 0.005, 0.0042];
+const HAZE_DENSITY = [0.012, 0.0075, 0.005, 0.003];
+// Once the weather is remembered, the haze takes on its sky (still no sun or hour yet).
+const WEATHER_SKY = { clear: 0xa9cfea, heat: 0x9cc8ec, rain: 0x98a6b2, fog: 0xd4d6d2, snow: 0xe4ebf0 };
+const mixHex = (a, b, t) => { const c = (x, s) => (x >> s) & 255, m = (s) => Math.round(c(a, s) + (c(b, s) - c(a, s)) * t) << s; return m(16) | m(8) | m(0); };
 
 export function worldSettings(m) {
   const stage = [m.city, m.year, m.weather, m.time].filter(Boolean).length;
   const look = composeLook({ city: m.city, era: m.year, season: m.weather ? m.season : null });
-  const time = m.time ? m.time : { ...HAZE, fogDensity: HAZE_DENSITY[Math.min(stage, 3)] };
+  const sky = m.weather && WEATHER_SKY[m.weather];
+  const time = m.time ? m.time : sky
+    ? { ...HAZE, background: mixHex(HAZE.background, sky, 0.75), fog: mixHex(HAZE.fog, sky, 0.6), fogDensity: HAZE_DENSITY[3] }
+    : { ...HAZE, fogDensity: HAZE_DENSITY[Math.min(stage, 3)] };
   return { stage, look, time, weather: m.weather || 'clear', kit: stage >= 2 };
 }
 

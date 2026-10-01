@@ -20,8 +20,9 @@ import { createRng } from '../world/city/rng.js';
 const stage = document.getElementById('stage');
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.7));
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.2;
+// Neutral keeps saturated brick, signs and sky closer to their palette than ACES, which greys them.
+renderer.toneMapping = THREE.NeutralToneMapping;
+renderer.toneMappingExposure = 1.05;
 stage.append(renderer.domElement);
 const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1600);
 const ui = createUI(document.body);
@@ -152,12 +153,13 @@ function makePlayer(def, bought = null) {
   const rope = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0xf4f1e8 }));
   rope.frustumCulled = false; rope.visible = false;
   const arrowGeo = new THREE.ConeGeometry(0.45, 1.3, 4); arrowGeo.rotateX(-Math.PI / 2);
-  const arrow = new THREE.Mesh(arrowGeo, new THREE.MeshStandardMaterial({ color: 0xffd66b, emissive: 0xffb02e, emissiveIntensity: 0.9, flatShading: true }));
+  const arrow = new THREE.Mesh(arrowGeo, new THREE.MeshStandardMaterial({ color: 0xffd66b, emissive: 0xffb02e, emissiveIntensity: 0.45, flatShading: true }));
   arrow.rotation.order = 'YXZ';
   const all = new THREE.Group(); all.add(root, rope, arrow);
   return { root: all, body: root, avatar, vehicle, rope, arrow };
 }
 
+const ARROW_COLOUR = new THREE.Color();
 function placePlayer(dt) {
   const feet = mover.feet;
   player.body.position.copy(feet);
@@ -179,7 +181,13 @@ function placePlayer(dt) {
   player.arrow.visible = !!goal;
   if (goal) {
     const dx = goal.x - feet.x, dz = goal.z - feet.z, flat = Math.hypot(dx, dz);
-    player.arrow.position.set(feet.x, feet.y + (mover.M.kind === 'vehicle' ? 3.4 : 2.8) + Math.sin(clock * 3) * 0.12, feet.z);
+    // Hot and cold: far away it's small and blue, turning gold, then big, red and quick as you close in.
+    const near = THREE.MathUtils.clamp(1 - Math.hypot(flat, (goal.y || 0) - feet.y) / 260, 0, 1);
+    ARROW_COLOUR.setHSL(0.58 - near * 0.57, 0.95, 0.55);   // blue → teal → gold → orange → red
+    player.arrow.material.color.copy(ARROW_COLOUR); player.arrow.material.emissive.copy(ARROW_COLOUR);
+    const beat = 1 + Math.sin(clock * (3 + near * 9)) * 0.08 * (0.5 + near);
+    player.arrow.scale.setScalar((0.8 + near * 1.1) * beat);
+    player.arrow.position.set(feet.x, feet.y + (mover.M.kind === 'vehicle' ? 3.4 : 2.8) + near * 0.6 + Math.sin(clock * 3) * 0.12, feet.z);
     player.arrow.rotation.y = Math.atan2(-dx, -dz);
     player.arrow.rotation.x = THREE.MathUtils.clamp(Math.atan2((goal.y || 0) - feet.y, flat), -0.8, 0.8);
     player.arrow.visible = flat > 6 || Math.abs((goal.y || 0) - feet.y) > 6;
