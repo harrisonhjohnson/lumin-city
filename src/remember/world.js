@@ -16,7 +16,7 @@ export function createWorld() {
       // Street steam reads as dirty smudges on white clay: only once the year gives colour.
       if (settings.stage < 2) current.scene.traverse((o) => { if (o.isPoints && o.material.isShaderMaterial) o.visible = false; });
       fogTarget = current.scene.fog.density;
-      current.scene.fog.density = Math.max(fogTarget * 3.2, 0.012);
+      if (settings.surface !== false) current.scene.fog.density = Math.max(fogTarget * 3.2, 0.012);
       extras = new THREE.Group(); current.scene.add(extras); world.extras = extras;
       solids = [...current.buildings, ...(current.city.vehicles || [])];
       if (old) disposeScene(old.scene);

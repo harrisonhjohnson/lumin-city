@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="data:," />
+    <title>Remind Me kaiju</title>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #1b2030; font: 12px/1.35 ui-monospace, Menlo, monospace; }
+      canvas { display: block; width: 100%; height: 100%; }
+      #hud { position: fixed; left: 8px; top: 8px; max-width: 520px; padding: 6px 10px; border-radius: 6px; background: rgba(12, 14, 20, .74); color: #f2efe6; pointer-events: none; }
+      #hud b { display: block; font-size: 14px; letter-spacing: .04em; }
+      #hud .row { display: flex; gap: 8px; align-items: center; margin-top: 3px; }
+      #hud .bar { flex: 1; height: 9px; border-radius: 5px; background: rgba(255, 255, 255, .18); overflow: hidden; min-width: 120px; }
+      #hud .bar i { display: block; height: 100%; background: #ff5a4a; transform-origin: left; }
+      #stats { margin-top: 5px; opacity: .7; white-space: pre; }
+      #toasts { position: fixed; right: 12px; top: 12px; display: grid; gap: 4px; justify-items: end; pointer-events: none; }
+      .toast { padding: 4px 10px; border-radius: 6px; background: rgba(12, 14, 20, .8); color: #fff; }
+      .toast.good { background: rgba(32, 120, 70, .9); } .toast.bad { background: rgba(160, 36, 36, .92); }
+      #callout { position: fixed; left: 0; right: 0; top: 26%; text-align: center; font: 700 56px/1 ui-monospace, Menlo, monospace; color: #fff; text-shadow: 0 3px 0 #000; pointer-events: none; }
+      #prompt { position: fixed; left: 0; right: 0; bottom: 14px; text-align: center; color: #fff; pointer-events: none; }
+      #help { position: fixed; left: 8px; bottom: 8px; padding: 4px 8px; border-radius: 6px; background: rgba(12, 14, 20, .6); color: #cfd3dc; pointer-events: none; }
+      #result { position: fixed; inset: 0; display: none; place-items: center; background: rgba(8, 10, 16, .6); color: #fff; white-space: pre; font-size: 16px; line-height: 1.6; text-align: center; }
+      #result.on { display: grid; }
+    </style>
+  </head>
+  <body>
+    <div id="hud"><b id="title"></b><div id="objective"></div><div class="row"><span id="meterk"></span><span class="bar"><i id="meter"></i></span></div><div id="score"></div><div id="stats"></div></div>
+    <div id="toasts"></div>
+    <div id="callout"></div>
+    <div id="prompt"></div>
+    <div id="help">click: capture mouse · WASD fly · Space up · C down · Shift boost · LMB / L laser · RMB / F ice · Esc release</div>
+    <div id="result"></div>
+    <script type="module" src="./boss-preview.js"></script>
+  </body>
+</html>

@@ -93,7 +93,7 @@ export function createTown({ city = 'nyc', era = '2000', seed = WORLD.seed, save
   const names = NAMES[city]?.[era] || NAMES.nyc[2000];
   const jobs = JOBS[era] || JOBS[2000];
 
-  let residents;
+  let residents, owners = saved?.owners || null;
   if (saved?.residents?.length) residents = saved.residents;
   else {
     residents = [];
@@ -123,14 +123,19 @@ export function createTown({ city = 'nyc', era = '2000', seed = WORLD.seed, save
         stats: { earned: 0, spent: 0 },
       });
     }
-    // Friends, and a landlord for most: richer residents own other people's flats.
+    // Friends, and buildings with owners: most homes belong to one of the richer residents and
+    // everyone living there pays them rent; a few are owned by the people who live in them.
     const rich = [...residents].sort((a, b) => b.money - a.money).slice(0, 20);
-    for (const r of residents) {
-      while (r.friends.length < 3) { const f = residents[Math.floor(rng() * residents.length)]; if (f !== r && !r.friends.includes(f.id)) r.friends.push(f.id); }
-      if (!rich.includes(r) && rng() < 0.8) { r.landlord = rich[Math.floor(rng() * rich.length)].id; r.rent = Math.round(r.wage * (0.25 + rng() * 0.15) * 100) / 100; }
-    }
+    for (const r of residents) while (r.friends.length < 3) { const f = residents[Math.floor(rng() * residents.length)]; if (f !== r && !r.friends.includes(f.id)) r.friends.push(f.id); }
+    owners = {};
+    for (const h of homes) { const living = residents.filter((x) => x.home === h.id); owners[h.id] = rng() < 0.8 || !living.length ? rich[Math.floor(rng() * rich.length)].id : living[0].id; }
+    for (const s of shops) owners[s.id] = residents.find((k) => k.shop === s.id)?.id || null;
+    for (const r of residents) { const o = owners[r.home]; r.landlord = o && o !== r.id ? o : null; r.rent = r.landlord ? Math.round(r.wage * (0.25 + rng() * 0.15) * 100) / 100 + 4 * scale : 0; }
   }
   const people = new Map(residents.map((r) => [r.id, r]));
+  if (!owners) { owners = {}; for (const r of residents) if (r.landlord) owners[r.home] = r.landlord; }   // saves from before ownership
+  // What happened today that the player should hear about at night (main.js reads, then clears).
+  const ledger = saved?.ledger || { rent: 0, unpaid: [], events: [] };
   const shopStock = saved?.shops || Object.fromEntries(shops.map((s) => [s.id, { till: 0, stock: 90 }]));
 
   const town = {
@@ -145,6 +150,9 @@ export function createTown({ city = 'nyc', era = '2000', seed = WORLD.seed, save
     priceOf,
     shopName(placeId) { const p = byId.get(placeId); if (!p?.shop) return null; const keeper = residents.find((r) => r.shop === placeId); return `${keeper ? keeper.last + '\'s ' : ''}${SHOP_KINDS[p.shop].label[era] || SHOP_KINDS[p.shop].label[2000]}`; },
     tick, decide, where, outdoors, note, pay, transfer, hail, dropOff, save, stockOf: (id) => shopStock[id],
+    owners, ledger, onDay: [], civic: saved?.civic || null,
+    ownerOf: (placeId) => owners[placeId] ?? null,
+    tenantsOf: (placeId) => residents.filter((r) => r.home === placeId),
   };
 
   // Where someone is right now: at a place, or partway along a walk.
@@ -266,7 +274,17 @@ export function createTown({ city = 'nyc', era = '2000', seed = WORLD.seed, save
   // Midnight: rent changes hands and shops restock out of their tills.
   function newDay() {
     town.day++;
-    for (const r of residents) if (r.landlord && r.rent) transfer(r, people.get(r.landlord), r.rent, null);
+    // Rent goes to whoever owns the building now. The player's tenants who can't pay go on the
+    // ledger for the night's check-in instead of quietly running up debt.
+    for (const r of residents) {
+      const owner = owners[r.home];
+      if (!owner || owner === r.id || !r.rent) continue;
+      if (owner === 'player') {
+        if (r.money >= r.rent) { r.money = round2(r.money - r.rent); ledger.rent = round2(ledger.rent + r.rent); }
+        else if (!ledger.unpaid.includes(r.id)) ledger.unpaid.push(r.id);
+      } else transfer(r, people.get(owner), r.rent, null);
+    }
+    for (const f of town.onDay) f(town);
     for (const s of shops) { const st = shopStock[s.id], need = 90 - st.stock, cost = need * priceOf(s) * 0.45; const keeper = residents.find((k) => k.shop === s.id); if (keeper) transfer(keeper, null, Math.min(cost, keeper.money * 0.5), null); st.stock = 90; st.till = 0; }
   }
 
@@ -303,7 +321,7 @@ export function createTown({ city = 'nyc', era = '2000', seed = WORLD.seed, save
     return best?.id || 'park';
   }
 
-  function save() { return { v: 1, clock: town.clock, day: town.day, residents, shops: shopStock }; }
+  function save() { return { v: 1, clock: town.clock, day: town.day, residents, shops: shopStock, owners, ledger, civic: town.civic }; }
 
   // A fresh town runs its morning before you arrive, so people are already out and about.
   if (!saved) {

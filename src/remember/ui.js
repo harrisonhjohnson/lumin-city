@@ -77,11 +77,62 @@ const GLYPHS = {
     '<path class="t14" d="M70 50L52 36L34 52M52 36L46 60M30 76L46 60L64 74L62 90M30 76L20 88"/>' +
     '<path class="t8" d="M70 50L52 36L34 52M52 36L46 60M30 76L46 60L64 74L62 90M30 76L20 88"/>',
   ),
+  shop: svg(
+    '<path class="tan" d="M56 6H70V30H56Z"/>' +
+    '<path class="tan" d="M8 86V54Q8 22 44 22Q80 22 80 54V86Z"/>' +
+    '<path class="s" d="M10 62H78M10 74H78M24 48V62M40 40V62M56 44V62M70 50V62M17 62V74M33 62V74M49 62V74M65 62V74M25 74V86M41 74V86M57 74V86" stroke-width="2"/>' +
+    '<path class="k" d="M24 86V66Q24 50 44 50Q64 50 64 66V86Z"/>' +
+    '<path class="g" d="M32 86Q28 74 39 66Q39 74 45 70Q50 76 54 86Z"/>' +
+    '<path class="r" d="M39 86Q39 80 44 76Q49 80 49 86Z"/>' +
+    '<path class="t14" d="M90 92L70 54"/><path class="t8" d="M90 92L70 54" style="stroke:#c8955a"/>' +
+    '<circle class="g" cx="68" cy="40" r="15"/><circle class="r" cx="63" cy="36" r="3.4"/><circle class="r" cx="73" cy="43" r="3.4"/><circle class="r" cx="65" cy="47" r="2.6"/>',
+  ),
+  kaiju: svg(
+    '<path class="s" d="M0 91H96"/>' +
+    '<path class="p" d="M62 91V76H72V91Z"/><path class="p" d="M76 91V68H88V91Z"/>' +
+    '<path class="grn" d="M6 90Q2 74 20 70L18 58Q14 40 32 34Q38 20 56 22Q66 22 72 28L90 26L82 36L92 44L74 46Q70 56 60 60L64 76L58 90L40 90L38 82L24 90Z"/>' +
+    '<path class="g" d="M20 52L12 42L26 44ZM27 42L22 30L36 36ZM40 33L38 20L50 28Z"/>' +
+    '<path class="p" d="M76 46L79 40L82 46ZM83 45L86 40L89 45Z"/>' +
+    '<circle class="r" cx="68" cy="33" r="3.2"/>' +
+    '<path class="s" d="M58 54Q66 54 70 60" stroke-width="2.6"/>',
+  ),
+  mayor: svg(
+    '<path class="r" d="M32 54L18 92L34 82L44 94L54 58Z"/>' +
+    '<path class="r" d="M64 54L78 92L62 82L52 94L42 58Z"/>' +
+    Array.from({ length: 12 }, (_, i) => `<circle class="g" cx="${(48 + 25 * Math.cos((i * Math.PI) / 6)).toFixed(1)}" cy="${(36 + 25 * Math.sin((i * Math.PI) / 6)).toFixed(1)}" r="8"/>`).join('') +
+    '<circle class="g" cx="48" cy="36" r="25"/><circle class="p" cx="48" cy="36" r="16"/>' +
+    `<polygon class="r" points="${star(48, 36, 13, 5.6)}"/>`,
+  ),
+  owner: svg(
+    '<path class="p" d="M10 90V30L38 14V90Z"/>' +
+    '<path class="g" d="M38 90V40L68 28V90Z"/>' +
+    '<path class="sky" d="M17 34H24V42H17ZM26 29H32V38H26ZM17 50H24V58H17ZM26 48H32V56H26ZM17 66H24V74H17ZM26 64H32V72H26Z"/>' +
+    '<path class="sky" d="M45 48H52V56H45ZM54 45H61V53H54ZM45 64H52V72H45ZM54 62H61V70H54Z"/>' +
+    '<circle class="g" cx="68" cy="66" r="14"/><circle class="k" cx="68" cy="66" r="5"/>' +
+    '<path class="t14" d="M76 76L90 92"/><path class="t8" d="M76 76L90 92" style="stroke:#e9b23a"/>' +
+    '<path class="g" d="M84 86L89 80L93 86Z"/>',
+  ),
+  hero: svg(
+    '<path class="r" d="M30 46Q4 52 8 92Q22 80 38 84L40 52Z"/>' +
+    '<path class="r" d="M66 46Q92 52 88 92Q74 80 58 84L56 52Z"/>' +
+    '<path class="blu" d="M28 52Q48 42 68 52L64 92H32Z"/>' +
+    '<circle class="g" cx="48" cy="68" r="11"/>' +
+    `<polygon class="r" points="${star(48, 68, 8.4, 3.6)}"/>` +
+    '<circle class="p" cx="48" cy="26" r="15"/>' +
+    '<path class="k" d="M33 24Q48 17 63 24V31Q48 28 33 31Z"/>' +
+    '<path class="s" d="M43 38Q48 41 53 38"/>' +
+    '<path class="r" d="M33 14Q48 4 63 14L60 18Q48 11 36 18Z"/>',
+  ),
+  spark: svg(
+    `<polygon class="g" points="${star(48, 48, 44, 26, 8)}"/>` +
+    '<path class="p" d="M48 26L68 50H55V72H41V50H28Z"/>',
+  ),
 };
 
 const GLYPH_COLOURS = {
   skate: '#e9b23a', race: '#e0322b', heist: '#5b4b8f', aliens: '#2f9a78', patrol: '#2f66b0', pizza: '#e8762c',
   taxi: '#f6b90c', roam: '#6b5b95', foot: '#c9bfa6',
+  shop: '#c2562b', kaiju: '#5c7a3a', mayor: '#8b2f4f', owner: '#2a7f7a', hero: '#3b3f9e', spark: '#e9b23a',
 };
 const FALLBACK_COLOURS = ['#e0322b', '#e9b23a', '#2f66b0', '#2f9a78', '#5b4b8f', '#e8762c'];
 const MEMORY_TILT = [-1.8, 1.2, -0.8, 1.6, -1.3, 0.9];
@@ -191,6 +242,45 @@ const cash = (n, cents = Math.round(Math.abs(n) * 100) % 100 !== 0) => (
   `$${(Math.round(n * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: cents ? 2 : 0 })}`
 );
 
+// Pizza shop rush: ingredient bins, their icons, and the little drawings that build up on the pie.
+const KT_STEPS = ['dough', 'sauce', 'cheese', 'pepperoni', 'mushroom', 'olive', 'basil', 'pepper'];
+const KT_TOP = KT_STEPS.slice(3);
+const KT_LABEL = { dough: 'Dough', sauce: 'Sauce', cheese: 'Cheese', pepperoni: 'Pepperoni', mushroom: 'Mushroom', olive: 'Olive', basil: 'Basil', pepper: 'Pepper' };
+const ktSvg = (body) => `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false" fill="none" stroke="#1b1a17" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+const KT_ICON = {
+  dough: ktSvg('<ellipse cx="24" cy="28" rx="18" ry="12" fill="#f2d39b"/><ellipse cx="24" cy="23" rx="18" ry="12" fill="#f8e2b5"/><path d="M13 20Q18 15 24 17" stroke-width="2.4" stroke="#d8b46c"/>'),
+  sauce: ktSvg('<path d="M24 5C33 16 39 22 39 30A15 15 0 0 1 9 30C9 22 15 16 24 5Z" fill="#d8472b"/><path d="M17 31Q18 38 25 39" stroke="#f08a6a" stroke-width="2.6"/>'),
+  cheese: ktSvg('<path d="M5 33L43 15V33Z" fill="#f7dc78"/><path d="M5 33V40H43V33" fill="#e9b23a"/><circle cx="17" cy="31" r="2.6" fill="#e9b23a" stroke-width="2"/><circle cx="30" cy="26" r="2.2" fill="#e9b23a" stroke-width="2"/><circle cx="36" cy="30" r="1.6" fill="#e9b23a" stroke-width="2"/>'),
+  pepperoni: ktSvg('<circle cx="24" cy="24" r="17" fill="#c2332a"/><circle cx="17" cy="19" r="2.4" fill="#8f1f1b" stroke="none"/><circle cx="29" cy="17" r="2.4" fill="#8f1f1b" stroke="none"/><circle cx="26" cy="29" r="2.4" fill="#8f1f1b" stroke="none"/><circle cx="16" cy="30" r="2" fill="#8f1f1b" stroke="none"/>'),
+  mushroom: ktSvg('<path d="M9 26Q9 8 24 8Q39 8 39 26Z" fill="#e8d6bd"/><path d="M19 26H29V38Q24 41 19 38Z" fill="#f4e9d6"/><circle cx="17" cy="19" r="2" fill="#c9b08e" stroke="none"/><circle cx="29" cy="16" r="2.4" fill="#c9b08e" stroke="none"/>'),
+  olive: ktSvg('<circle cx="24" cy="24" r="16" fill="#2a2a38"/><circle cx="24" cy="24" r="6" fill="#f7dc78"/><path d="M14 16Q17 12 22 11" stroke="#6b6b82" stroke-width="2.4"/>'),
+  basil: ktSvg('<path d="M24 5Q42 20 24 43Q6 20 24 5Z" fill="#4faa5e"/><path d="M24 11V39M24 20L32 15M24 28L16 23M24 28L32 23" stroke-width="2.2"/>'),
+  pepper: ktSvg('<circle cx="24" cy="24" r="14" fill="none" stroke="#1b1a17" stroke-width="12"/><circle cx="24" cy="24" r="14" fill="none" stroke="#3aa86f" stroke-width="6"/>'),
+};
+// Spots for scattered toppings; every topping layer takes five of them, offset so layers interleave.
+const KT_SPOTS = [[-40, -28], [26, -46], [48, 8], [-4, 6], [-48, 30], [22, 46], [-18, -60], [62, -22], [-64, -4], [-26, 54], [44, 42], [8, -22], [-34, 6], [24, 18]];
+const KT_PIECE = {
+  pepperoni: '<circle r="13" fill="#c2332a"/><circle cx="-5" cy="-4" r="2.2" fill="#8f1f1b" stroke="none"/><circle cx="5" cy="-6" r="2.2" fill="#8f1f1b" stroke="none"/><circle cx="3" cy="5" r="2.2" fill="#8f1f1b" stroke="none"/>',
+  mushroom: '<path d="M-13 3Q-13 -13 0 -13Q13 -13 13 3Z" fill="#e8d6bd"/><path d="M-4 3H4V11Q0 13 -4 11Z" fill="#f4e9d6"/>',
+  olive: '<circle r="9" fill="#2a2a38"/><circle r="3.4" fill="#f7dc78" stroke-width="2"/>',
+  basil: '<path d="M0 -13Q15 -2 0 13Q-15 -2 0 -13Z" fill="#4faa5e"/><path d="M0 -9V9" stroke-width="2"/>',
+  pepper: '<circle r="9" fill="none" stroke="#1b1a17" stroke-width="9"/><circle r="9" fill="none" stroke="#3aa86f" stroke-width="3.4"/>',
+};
+const ktLayer = (id, k = 0) => {
+  if (id === 'dough') return '<g class="rm-kt-ly" data-l="dough"><circle r="92" fill="#f2d39b"/><circle r="80" fill="none" stroke="#e1b66d" stroke-width="3"/></g>';
+  if (id === 'sauce') return '<g class="rm-kt-ly" data-l="sauce"><circle r="73" fill="#d8472b"/><path d="M-42 -8Q-12 -44 26 -22T50 20" fill="none" stroke="#f08a6a" stroke-width="5"/><path d="M-30 30Q-8 12 14 26" fill="none" stroke="#f08a6a" stroke-width="4"/></g>';
+  if (id === 'cheese') {
+    const blobs = [[-34, -22, 21], [0, -42, 20], [36, -24, 21], [44, 14, 20], [14, 40, 21], [-30, 30, 20], [-48, 2, 17], [0, 0, 24]];
+    return `<g class="rm-kt-ly" data-l="cheese"><g stroke-width="6">${blobs.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#f7dc78"/>`).join('')}</g><g stroke="none">${blobs.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r - 1}" fill="#f7dc78"/>`).join('')}<circle cx="-10" cy="-18" r="4" fill="#e9b23a"/><circle cx="22" cy="6" r="3.4" fill="#e9b23a"/><circle cx="-26" cy="26" r="3" fill="#e9b23a"/></g></g>`;
+  }
+  const pieces = Array.from({ length: 5 }, (_, j) => {
+    const [x, y] = KT_SPOTS[(k * 5 + j * 3 + (k % 2)) % KT_SPOTS.length];
+    return `<g transform="translate(${x} ${y}) rotate(${(j * 71 + k * 33) % 360})"><g class="rm-kt-pc" style="animation-delay:${j * 45}ms">${KT_PIECE[id]}</g></g>`;
+  }).join('');
+  return `<g class="rm-kt-ly" data-l="${id}">${pieces}</g>`;
+};
+const KT_OVEN = '<svg viewBox="0 0 120 110" aria-hidden="true" focusable="false" fill="none" stroke="#1b1a17" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M44 4H64V30H44Z" fill="#c8955a"/><path d="M8 104V58Q8 20 60 20Q112 20 112 58V104Z" fill="#c2562b"/><path d="M8 80H112M8 92H112M24 62V80M44 52V80M64 50V80M84 52V80M100 62V80M16 80V92M36 80V92M56 80V92M76 80V92M96 80V92" stroke-width="2.2"/><path d="M26 104V74Q26 48 60 48Q94 48 94 74V104Z" fill="#1b1a17"/><g class="rm-kt-fire"><path d="M38 104Q30 88 46 76Q46 88 54 84Q60 92 66 104Z" fill="#e9b23a"/><path d="M52 104Q52 94 60 88Q70 94 70 104Z" fill="#e0322b" stroke-width="2.6"/><path d="M68 104Q66 94 76 88Q84 96 82 104Z" fill="#e9b23a" stroke-width="3"/></g></svg>';
+
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -203,6 +293,7 @@ const h = (tag, cls, ...kids) => {
   return n;
 };
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const KEYS = '1234567890-=';
 const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const restart = (n, c) => { n.classList.remove(c); void n.offsetWidth; n.classList.add(c); };
 const fmt = (n) => Math.round(n).toLocaleString('en-US');
@@ -349,6 +440,7 @@ export function createUI(root) {
   let cur = null;
   let memTotal = null;
   let tk = null;
+  let sh = null;
   const timers = new Set();
   const cancels = new Set();
   const observers = new Set();
@@ -381,6 +473,7 @@ export function createUI(root) {
   };
   const begin = (p) => {
     if (!p.talk && tk) closeTalk();
+    if (!p.shopp && sh) closeShop();
     if (cur) settle(cur, cur.fallback);
     cur = p;
   };
@@ -465,23 +558,27 @@ export function createUI(root) {
     });
   }
 
-  const affords = (o) => o.afford ?? (memTotal != null && Number(o.cost) <= memTotal);
+  const affords = (o) => o.state === 'locked' ? false : (o.afford ?? (memTotal != null && Number(o.cost) <= memTotal));
+  const stateOf = (o) => o.state || (o.locked ? 'buy' : 'open');
+  const isGated = (o) => ['buy', 'locked', 'forked'].includes(stateOf(o));
 
-  function buildCard(style, o, i) {
+  function buildCard(style, o, i, path = false) {
     const b = el('button', 'rm-card');
     const tilt = style === 'board' ? BOARD_TILT : MEMORY_TILT;
-    const locked = style === 'board' && !!o.locked;
+    const st = style === 'board' ? stateOf(o) : 'open';
+    const locked = style === 'board' && isGated(o);
     b.type = 'button';
     b.style.setProperty('--i', i);
-    b.style.setProperty('--tilt', `${tilt[i % tilt.length]}deg`);
-    b.setAttribute('aria-keyshortcuts', String(i + 1));
+    b.style.setProperty('--tilt', path ? `${i % 2 ? 0.7 : -0.7}deg` : `${tilt[i % tilt.length]}deg`);
+    b.setAttribute('aria-keyshortcuts', KEYS[i] ?? String(i + 1));
     if (style === 'board') {
       const c0 = o.colour || GLYPH_COLOURS[o.glyph] || FALLBACK_COLOURS[i % 6];
       const c = locked ? muted(c0) : c0;
       b.style.setProperty('--c', c);
       b.style.setProperty('--fg', fgFor(c));
+      if (o.state) b.classList.add(`is-st-${st}`);
     }
-    const key = h('span', 'rm-key', String(i + 1));
+    const key = h('span', 'rm-key', KEYS[i] ?? String(i + 1));
     key.setAttribute('aria-hidden', 'true');
     b.append(key);
     if (style === 'board' && (GLYPHS[o.glyph] || locked)) {
@@ -495,22 +592,52 @@ export function createUI(root) {
       b.append(lock);
     }
     b.append(h('span', 'rm-card-label', String(o.label)));
-    if (o.hint) b.append(h('span', 'rm-card-hint', String(o.hint)));
+    if (o.hint && st !== 'locked') b.append(h('span', 'rm-card-hint', String(o.hint)));
     if (style === 'board' && o.badge) b.append(h('span', 'rm-badge', String(o.badge)));
+    if (style === 'board' && (o.rank || st === 'done')) {
+      const rs = el('span', 'rm-rankstamp');
+      if (o.rank) rs.textContent = String(o.rank).toUpperCase().slice(0, 2); else rs.innerHTML = CHECK;
+      rs.setAttribute('aria-hidden', 'true');
+      b.classList.add('has-rank');
+      b.append(rs, el('span', 'rm-sr', o.rank ? `Best rank ${String(o.rank).toUpperCase()}.` : 'Done.'));
+    }
     if (locked) {
       const can = !!affords(o);
-      const cost = fmt(Number(o.cost) || 0);
-      const vis = el('span', null, can ? `Unlock · ${cost}` : `${cost} memories`);
-      vis.setAttribute('aria-hidden', 'true');
       b.classList.add('is-locked', can ? 'is-afford' : 'is-short');
       b.setAttribute('aria-disabled', String(!can));
-      b.append(h('span', 'rm-cost', el('i'), vis, el('span', 'rm-sr', can ? `Locked. Unlock for ${cost} memories.` : `Locked. Costs ${cost} memories.`)));
+      if (st === 'locked') {
+        const req = String(o.requirement || 'Not unlocked yet');
+        const vis = el('span', null, req);
+        vis.setAttribute('aria-hidden', 'true');
+        b.append(h('span', 'rm-cost is-req', el('i'), vis, el('span', 'rm-sr', `Locked. Needs: ${req}.`)));
+      } else {
+        const cost = fmt(Number(o.cost) || 0);
+        const vis = el('span', null, can ? `Unlock · ${cost}` : `${cost} memories`);
+        vis.setAttribute('aria-hidden', 'true');
+        const pre = st === 'forked' ? 'Road not taken. ' : '';
+        b.append(h('span', 'rm-cost', el('i'), vis, el('span', 'rm-sr', can ? `${pre}Locked. Unlock for ${cost} memories.` : `${pre}Locked. Costs ${cost} memories.`)));
+      }
     }
     return b;
   }
 
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  // Offset of an element inside a scroller, ignoring any transform (cards tilt, lift and deal in).
+  const placeIn = (n, root) => {
+    let x = 0;
+    let y = 0;
+    const w = n.offsetWidth;
+    const hh = n.offsetHeight;
+    for (let e = n; e && e !== root; e = e.offsetParent) {
+      x += e.offsetLeft;
+      y += e.offsetTop;
+    }
+    return { x, y, w, h: hh };
+  };
+
   function ask(question, options, opts = { style: 'memory' }) {
     const style = opts.style === 'board' ? 'board' : 'memory';
+    const path = style === 'board' && options.some((o) => Number.isFinite(Number(o.tier)) && o.tier !== null && o.tier !== undefined);
     return new Promise((resolve) => {
       if (dead) return;
       const p = { resolve, fallback: null };
@@ -524,27 +651,37 @@ export function createUI(root) {
       let cards = [];
       let need = null;
       let needTimer = 0;
+      let scroller = null;
+      let lineSvg = null;
+      let ro = null;
 
       const setActive = (i, focus) => {
         idx = i;
         cards.forEach((c, k) => c.classList.toggle('is-active', k === i));
-        if (focus) cards[i].focus({ preventScroll: true });
+        if (path && lineSvg) lineSvg.querySelectorAll('path[data-from]').forEach((n) => n.classList.toggle('is-hot', +n.dataset.from === i || +n.dataset.to === i));
+        if (focus) {
+          if (path) cards[i].scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+          cards[i].focus({ preventScroll: true });
+        }
       };
       // A locked card you cannot afford shakes and says how far off you are; it never resolves.
       const refuse = (i) => {
         setActive(i, true);
         restart(cards[i], 'is-nope');
-        const short = Math.ceil(Number(options[i].cost) - memTotal);
-        need.replaceChildren(el('span', null, memTotal != null && short > 0
-          ? `Need ${fmt(short)} more ${short === 1 ? 'memory' : 'memories'}`
-          : 'Not enough memories yet'));
+        const o = options[i];
+        const short = Math.ceil(Number(o.cost) - memTotal);
+        need.replaceChildren(el('span', null, stateOf(o) === 'locked'
+          ? `Needs: ${o.requirement || 'something first'}`
+          : memTotal != null && short > 0
+            ? `Need ${fmt(short)} more ${short === 1 ? 'memory' : 'memories'}`
+            : 'Not enough memories yet'));
         restart(need, 'is-on');
         unlater(needTimer);
-        needTimer = later(() => need.classList.remove('is-on'), 2400);
+        needTimer = later(() => need.classList.remove('is-on'), 2600);
       };
       const choose = (i) => {
         if (picked || !ready) return;
-        if (options[i].locked && !affords(options[i])) return refuse(i);
+        if (isGated(options[i]) && !affords(options[i])) return refuse(i);
         picked = true;
         setActive(i);
         box.classList.add('is-done');
@@ -557,6 +694,28 @@ export function createUI(root) {
       };
       const move = (k) => {
         const n = cards.length;
+        if (path) {
+          // Spatial: the nearest card in the direction pressed, whichever way the path runs.
+          const at = cards.map((c) => placeIn(c, scroller));
+          const me = at[idx];
+          let best = -1;
+          let bestD = Infinity;
+          at.forEach((q, i) => {
+            if (i === idx) return;
+            const dx = q.x + q.w / 2 - (me.x + me.w / 2);
+            const dy = q.y + q.h / 2 - (me.y + me.h / 2);
+            const horiz = k === 'ArrowRight' || k === 'ArrowLeft';
+            const along = horiz ? (k === 'ArrowRight' ? dx : -dx) : (k === 'ArrowDown' ? dy : -dy);
+            if (along < 6) return;
+            const d = along + Math.abs(horiz ? dy : dx) * 2.2;
+            if (d < bestD) {
+              bestD = d;
+              best = i;
+            }
+          });
+          if (best >= 0) setActive(best, true);
+          return;
+        }
         const cols = getComputedStyle(box).gridTemplateColumns.split(' ').length;
         let i = idx;
         if (k === 'ArrowRight') i = (i + 1) % n;
@@ -569,15 +728,130 @@ export function createUI(root) {
         setActive(i, true);
       };
 
-      p.stop = () => { t.stop(); if (!picked) box?.remove(); };
+      // The path: tiers are columns left to right (rows top to bottom on phones); a tier with
+      // more than three cards runs on into a second column; thin lines join a card to what it unlocks.
+      const buildPath = () => {
+        const tierOf = (o) => Math.max(0, Math.floor(Number(o.tier) || 0));
+        const keys = [...new Set(options.map(tierOf))].sort((a, b) => a - b);
+        const units = new Map(keys.map((k) => [k, []]));
+        const used = new Set();
+        options.forEach((o, i) => {
+          if (used.has(i)) return;
+          const mates = o.fork ? options.map((x, k) => k).filter((k) => options[k].fork === o.fork && tierOf(options[k]) === tierOf(o) && !used.has(k)) : [];
+          if (mates.length > 1) {
+            mates.forEach((k) => used.add(k));
+            units.get(tierOf(o)).push({ fork: String(o.fork), idx: mates, size: 2 });
+          } else {
+            used.add(i);
+            units.get(tierOf(o)).push({ idx: [i], size: 1 });
+          }
+        });
+        const colsFor = (mp) => keys.map((k) => {
+          let c = 1;
+          let fill = 0;
+          units.get(k).forEach((u) => {
+            if (fill + u.size > mp) {
+              c += 1;
+              fill = 0;
+            }
+            fill += u.size;
+          });
+          return c;
+        });
+        let mp = 3;
+        if (colsFor(3).reduce((a, b) => a + b, 0) > 6) mp = 4;
+        const cols = colsFor(mp);
+        const tall = Math.max(...keys.map((k) => Math.min(mp, units.get(k).reduce((a, u) => a + u.size, 0))));
+        const hasFork = options.some((o) => o.fork);
+        box.classList.add('rm-path');
+        box.style.setProperty('--mp', mp);
+        box.style.setProperty('--r', (Math.max(1, tall) + (hasFork ? 0.45 : 0)).toFixed(2));
+        scroller = el('div', 'rm-pscroll');
+        lineSvg = document.createElementNS(SVGNS, 'svg');
+        lineSvg.setAttribute('class', 'rm-plines');
+        lineSvg.setAttribute('aria-hidden', 'true');
+        const tiersEl = el('div', 'rm-ptiers');
+        keys.forEach((k, ti) => {
+          const col = el('div', 'rm-tier');
+          col.style.flex = `${cols[ti]} 1 0`;
+          col.dataset.tier = k;
+          col.style.gridTemplateRows = `repeat(${Math.min(mp, units.get(k).reduce((a, u) => a + u.size, 0))}, auto)`;
+          units.get(k).forEach((u) => {
+            if (u.fork) {
+              const f = el('div', 'rm-fork');
+              f.append(h('span', 'rm-fork-label', u.fork));
+              u.idx.forEach((ci, n) => {
+                if (n) f.append(h('span', 'rm-or', 'OR'));
+                f.append(cards[ci]);
+              });
+              col.append(f);
+            } else col.append(cards[u.idx[0]]);
+          });
+          tiersEl.append(col);
+        });
+        scroller.append(lineSvg, tiersEl);
+        box.append(scroller);
+      };
+      const redraw = () => {
+        if (!scroller) return;
+        const vertical = window.matchMedia('(max-width: 700px)').matches;
+        const w = scroller.scrollWidth;
+        const hh = scroller.scrollHeight;
+        lineSvg.setAttribute('width', w);
+        lineSvg.setAttribute('height', hh);
+        lineSvg.setAttribute('viewBox', `0 0 ${w} ${hh}`);
+        const first = cards[0];
+        const cw = first.offsetWidth;
+        const ch = first.offsetHeight;
+        box.dataset.d = ch >= 150 && cw >= 230 ? 'l' : ch >= 118 ? 'm' : 's';
+        const out = [];
+        options.forEach((o, i) => (o.leadsTo || []).forEach((to) => {
+          const j = options.findIndex((x) => x.id === to);
+          if (j < 0 || j === i) return;
+          const a = placeIn(cards[i], scroller);
+          const b = placeIn(cards[j], scroller);
+          const live = stateOf(o) === 'done';
+          let ax;
+          let ay;
+          let bx;
+          let by;
+          let d;
+          if (vertical) {
+            ax = a.x + a.w / 2;
+            ay = a.y + a.h;
+            bx = b.x + b.w / 2;
+            by = b.y;
+            const m = Math.max(14, (by - ay) / 2);
+            d = `M${ax} ${ay}C${ax} ${ay + m} ${bx} ${by - m} ${bx} ${by}`;
+          } else {
+            ax = a.x + a.w;
+            ay = a.y + a.h / 2;
+            bx = b.x;
+            by = b.y + b.h / 2;
+            const m = Math.max(14, (bx - ax) / 2);
+            d = `M${ax} ${ay}C${ax + m} ${ay} ${bx - m} ${by} ${bx} ${by}`;
+          }
+          out.push(`<path class="${live ? 'is-live' : ''}" data-from="${i}" data-to="${j}" d="${d}"/><circle class="${live ? 'is-live' : ''}" cx="${ax}" cy="${ay}" r="4.5"/><path class="rm-pend ${live ? 'is-live' : ''}" d="M${bx} ${by}${vertical ? `l-6 -9h12z` : `l-9 -6v12z`}"/>`);
+        }));
+        lineSvg.innerHTML = out.join('');
+        if (idx >= 0) lineSvg.querySelectorAll('path[data-from]').forEach((n) => n.classList.toggle('is-hot', +n.dataset.from === idx || +n.dataset.to === idx));
+      };
+
+      p.stop = () => {
+        t.stop();
+        ro?.disconnect();
+        if (ro) observers.delete(ro);
+        if (!picked) box?.remove();
+      };
       p.advance = () => { if (!ready) t.finish(); };
       p.key = (e) => {
         if (!ready) {
           if (isAdvance(e)) { e.preventDefault(); if (!e.repeat) t.finish(); }
           return;
         }
-        if (/^[1-9]$/.test(e.key)) {
-          if (+e.key <= options.length) { e.preventDefault(); choose(+e.key - 1); }
+        const slot = e.key.length === 1 ? KEYS.indexOf(e.key) : -1;
+        if (slot >= 0) {
+          if (slot < options.length) { e.preventDefault(); choose(slot); }
         } else if (e.key.startsWith('Arrow')) {
           e.preventDefault();
           move(e.key);
@@ -589,12 +863,13 @@ export function createUI(root) {
 
       t.done.then(() => {
         if (cur !== p) return;
-        box = el('div', `rm-choices rm-${style}${style === 'board' && options.length > 6 ? ' rm-wide' : ''}${opts.confirm ? ' rm-confirm' : ''}${style === 'board' && options.length > 6 && options.length % 4 === 3 ? ' rm-odd3' : ''}${style === 'board' && options.length > 6 && options.length % 2 ? ' rm-odd' : ''}`);
+        const wide = style === 'board' && !path && options.length > 6;
+        box = el('div', `rm-choices rm-${style}${wide ? ' rm-wide' : ''}${opts.confirm ? ' rm-confirm' : ''}${wide && options.length % 4 === 3 ? ' rm-odd3' : ''}${wide && options.length % 2 ? ' rm-odd' : ''}`);
         box.setAttribute('role', 'group');
         box.setAttribute('aria-label', String(question));
         box.style.setProperty('--n', options.length);
-        cards = options.map((o, i) => buildCard(style, o, i));
-        if (style === 'board' && options.some((o) => o.locked)) {
+        cards = options.map((o, i) => buildCard(style, o, i, path));
+        if (style === 'board' && options.some(isGated)) {
           need = el('div', 'rm-need');
           need.setAttribute('role', 'status');
           box.append(need);
@@ -608,10 +883,18 @@ export function createUI(root) {
             setActive(i);
           });
         });
-        box.prepend(...cards);
+        if (path) buildPath(); else box.prepend(...cards);
         stack.insertBefore(box, panel);
+        if (path) {
+          redraw();
+          if (typeof ResizeObserver === 'function') {
+            ro = new ResizeObserver(redraw);
+            ro.observe(scroller);
+            observers.add(ro);
+          }
+        }
         ready = true;
-        if (window.matchMedia('(hover: hover)').matches) setActive(0, true);
+        if (window.matchMedia('(hover: hover)').matches) setActive(path ? Math.max(0, options.findIndex((o) => stateOf(o) === 'open')) : 0, true);
       });
     });
   }
@@ -1469,6 +1752,1052 @@ export function createUI(root) {
     });
   }
 
+  // A one-shot overlay that settles on Enter / Space / click, with the same 350 ms double-press guard as results.
+  // `build` gets { box, at, finish } and returns the animation length in ms; everything else is shared.
+  function page({ cls, label, labelledBy, build, fallback }) {
+    return new Promise((resolve) => {
+      if (dead) return;
+      const p = { resolve, fallback };
+      begin(p);
+      const box = el('div', cls);
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-modal', 'true');
+      if (labelledBy) box.setAttribute('aria-labelledby', labelledBy);
+      if (label) box.setAttribute('aria-label', label);
+      let ready = false;
+      let readyAt = 0;
+      const seq = [];
+      const extra = { stops: [], onFinish: null };
+      const at = (fn, ms) => seq.push(later(fn, ms));
+      const lock = () => performance.now() - readyAt < 350;
+      const finish = () => {
+        if (ready) return;
+        ready = true;
+        readyAt = performance.now();
+        seq.forEach(unlater);
+        extra.onFinish?.();
+        box.classList.add('is-ready');
+        box.querySelector('.rm-btn')?.focus({ preventScroll: true });
+      };
+      const dismiss = () => {
+        if (!ready || lock() || box.classList.contains('is-leaving')) return;
+        box.querySelector('.rm-btn')?.classList.add('is-picked');
+        box.classList.add('is-leaving');
+        later(() => settle(p, p.value), 240);
+      };
+      layer.insertBefore(box, calloutEl);
+      const ms = build({ box, at, finish, extra, p, dismiss, isReady: () => ready });
+      if (reduced() || !ms) finish(); else at(finish, ms);
+      box.addEventListener('click', () => { if (ready) dismiss(); else finish(); });
+      p.stop = () => {
+        seq.forEach(unlater);
+        extra.stops.forEach((f) => f());
+        box.remove();
+      };
+      p.advance = () => { if (ready) dismiss(); else finish(); };
+      p.key = (e) => {
+        if (e.key === 'Tab') e.preventDefault();
+        else if (isAdvance(e)) {
+          e.preventDefault();
+          if (!e.repeat) p.advance();
+        }
+      };
+      p.api = { box, dismiss, finish, isReady: () => ready };
+    });
+  }
+
+  const contBtn = () => {
+    const b = h('button', 'rm-btn', h('kbd'), h('span', null, 'Continue'));
+    b.type = 'button';
+    b.firstChild.innerHTML = RETURN;
+    return b;
+  };
+
+  // The nightly account book: ruled lines, money in and out, a progress bar or two, a note in the margin.
+  function ledger({ kicker = '', title = '', rows = [], note = '' } = {}) {
+    const titleId = `${id}-lg-title`;
+    return page({
+      cls: 'rm-ledger',
+      labelledBy: titleId,
+      fallback: undefined,
+      build({ box }) {
+        const list = h('ol', 'rm-lg-rows', ...rows.map((r, i) => {
+          const bar = r.progress != null;
+          const li = h('li', `rm-lg-row${bar ? ' is-bar' : ''}${r.total ? ' is-total' : ''}`, h('span', 'rm-lg-k', String(r.label ?? '')));
+          li.style.setProperty('--i', i);
+          if (bar) {
+            const f = clamp(Number(r.progress) || 0, 0, 1);
+            const fill = el('i');
+            fill.style.setProperty('--f', f);
+            const track = h('span', 'rm-lg-bar', fill);
+            track.setAttribute('role', 'meter');
+            track.setAttribute('aria-valuemin', '0');
+            track.setAttribute('aria-valuemax', '100');
+            track.setAttribute('aria-valuenow', String(Math.round(f * 100)));
+            track.setAttribute('aria-label', String(r.label ?? ''));
+            li.append(track);
+          } else li.append(el('i'));
+          const v = r.value ?? (bar ? `${Math.round(clamp(Number(r.progress) || 0, 0, 1) * 100)}%` : '');
+          if (v !== '') li.append(h('span', `rm-lg-v${r.tone === 'good' || r.tone === 'bad' ? ` is-${r.tone}` : ''}`, String(v)));
+          return li;
+        }));
+        const sheet = h('div', 'rm-lg-sheet',
+          h('div', 'rm-lg-holes', ...Array.from({ length: 6 }, () => el('i'))),
+          h('header', 'rm-lg-head', kicker ? h('small', null, String(kicker)) : null, (() => { const t = h('h2', null, String(title)); t.id = titleId; return t; })()),
+          list,
+          note ? h('p', 'rm-lg-note', String(note)) : null,
+          h('div', 'rm-lg-actions', contBtn()));
+        box.append(sheet);
+        sheet.querySelector('.rm-lg-rows').style.setProperty('--n', rows.length);
+        return 700 + rows.length * 170 + (note ? 500 : 200);
+      },
+    });
+  }
+
+  // A hard choice: a situation, two or three ways out, and what each one costs and buys.
+  function decision({ kicker = '', title = '', situation = '', options = [] } = {}) {
+    const opts = options.slice(0, 4);
+    const titleId = `${id}-dc-title`;
+    return new Promise((resolve) => {
+      if (dead) return;
+      const p = { resolve, fallback: null };
+      begin(p);
+      const box = el('div', 'rm-decision');
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-modal', 'true');
+      box.setAttribute('aria-labelledby', titleId);
+      const tEl = h('h2', null, String(title));
+      tEl.id = titleId;
+      const btns = opts.map((o, i) => {
+        const b = el('button', 'rm-dc-opt');
+        b.type = 'button';
+        b.style.setProperty('--i', i);
+        b.setAttribute('aria-keyshortcuts', String(i + 1));
+        const key = h('span', 'rm-key', String(i + 1));
+        key.setAttribute('aria-hidden', 'true');
+        b.append(key, h('b', 'rm-dc-l', String(o.label)),
+          h('ul', 'rm-fx', ...(o.effects || []).map((f) => {
+            const tone = f.tone === 'good' || f.tone === 'bad' ? f.tone : '';
+            const c = h('li', `rm-fx-chip${tone ? ` is-${tone}` : ''}`, h('i', null, tone === 'good' ? '+' : tone === 'bad' ? '−' : '•'), h('span', null, String(f.text)));
+            c.setAttribute('aria-label', `${tone === 'good' ? 'Good: ' : tone === 'bad' ? 'Bad: ' : ''}${f.text}`);
+            return c;
+          })));
+        return b;
+      });
+      const card = h('div', 'rm-dc-card',
+        h('header', 'rm-dc-head', kicker ? h('small', null, String(kicker)) : null, tEl),
+        h('p', 'rm-dc-sit', String(situation)),
+        (() => { const g = h('div', 'rm-dc-opts', ...btns); g.setAttribute('role', 'group'); g.dataset.n = String(btns.length); return g; })());
+      box.append(card);
+      layer.insertBefore(box, calloutEl);
+      let ready = false;
+      let picked = false;
+      let idx = -1;
+      const setActive = (i, focus) => {
+        idx = i;
+        btns.forEach((b, k) => b.classList.toggle('is-active', k === i));
+        if (focus) btns[i]?.focus({ preventScroll: true });
+      };
+      const choose = (i) => {
+        if (!ready || picked || !opts[i]) return;
+        picked = true;
+        setActive(i);
+        box.classList.add('is-done');
+        btns[i].classList.add('is-picked');
+        const stamp = el('span', 'rm-stamp');
+        stamp.innerHTML = CHECK;
+        btns[i].append(stamp);
+        btns.forEach((b) => { b.disabled = true; });
+        later(() => { box.classList.add('is-leaving'); later(() => settle(p, opts[i].id), 240); }, 350);
+      };
+      const at = later(() => { ready = true; box.classList.add('is-ready'); }, reduced() ? 0 : 900);
+      if (reduced()) { unlater(at); ready = true; box.classList.add('is-ready'); }
+      btns.forEach((b, i) => {
+        b.addEventListener('click', () => choose(i));
+        b.addEventListener('focus', () => setActive(i));
+        b.addEventListener('pointerenter', (e) => {
+          if (e.pointerType !== 'mouse' || picked || !ready) return;
+          if (btns.includes(document.activeElement) && document.activeElement !== b) document.activeElement.blur();
+          setActive(i);
+        });
+      });
+      p.stop = () => { unlater(at); box.remove(); };
+      p.key = (e) => {
+        if (e.key === 'Tab') { if (!btns.includes(document.activeElement)) { e.preventDefault(); if (ready) setActive(e.shiftKey ? btns.length - 1 : 0, true); } return; }
+        if (!ready) return;
+        if (/^[1-9]$/.test(e.key)) {
+          if (+e.key <= opts.length) { e.preventDefault(); choose(+e.key - 1); }
+        } else if (e.key.startsWith('Arrow')) {
+          e.preventDefault();
+          const d = e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 1;
+          setActive(idx < 0 ? (d > 0 ? 0 : btns.length - 1) : (idx + d + btns.length) % btns.length, true);
+        } else if (e.key === 'Enter' && idx >= 0 && !btns.includes(document.activeElement)) {
+          e.preventDefault();
+          if (!e.repeat) choose(idx);
+        }
+      };
+    });
+  }
+
+  // Election night: bars race up the chart, the winner is stamped, Enter carries on.
+  function election({ title = 'Election night', candidates = [], total, turnout } = {}) {
+    const list = candidates.slice(0, 6).map((c) => ({ name: String(c.name ?? ''), votes: Math.max(0, Number(c.votes) || 0), you: !!c.you }));
+    const sum = list.reduce((a, c) => a + c.votes, 0);
+    const all = Number(total) > 0 ? Number(total) : sum;
+    const max = Math.max(1, ...list.map((c) => c.votes));
+    const winner = list.reduce((w, c, i) => (c.votes > (list[w]?.votes ?? -1) ? i : w), 0);
+    const order = list.map((c, i) => i).sort((a, b) => list[b].votes - list[a].votes);
+    const pace = list.map((c, i) => (i === winner ? 1.9 : 0.55 + order.indexOf(i) * 0.2));
+    const titleId = `${id}-el-title`;
+    const tn = typeof turnout === 'number' ? `${Math.round((turnout <= 1 ? turnout * 100 : turnout) * 10) / 10}%` : turnout != null ? String(turnout) : '';
+    const you = list.findIndex((c) => c.you);
+    const margin = you >= 0 ? (you === winner ? list[you].votes - Math.max(0, ...list.filter((c, i) => i !== you).map((c) => c.votes)) : list[winner].votes - list[you].votes) : 0;
+    return page({
+      cls: 'rm-elect',
+      labelledBy: titleId,
+      fallback: undefined,
+      build({ box, extra }) {
+        const cols = list.map((c, i) => {
+          const face = el('span', 'rm-el-face');
+          face.innerHTML = portrait(c.name).svg;
+          const num = el('b', 'rm-el-num', '0');
+          const bar = h('div', 'rm-el-bar', el('i'));
+          const area = h('div', 'rm-el-area', bar, num);
+          const col = h('div', `rm-el-col${c.you ? ' is-you' : ''}`, area, face,
+            h('span', 'rm-el-name', c.name), h('small', 'rm-el-pct', ''));
+          col.style.setProperty('--i', i);
+          if (c.you) col.append(h('span', 'rm-el-you', 'You'));
+          return { c, col, bar, num, pct: col.querySelector('.rm-el-pct') };
+        });
+        const stamp = h('span', 'rm-el-stamp', h('span', null, 'Elected'));
+        stamp.style.filter = `url(#${id}-ink)`;
+        const verdict = you >= 0
+          ? h('p', `rm-el-verdict ${you === winner ? 'is-win' : 'is-lose'}`, you === winner ? `You win by ${fmt(margin)} ${margin === 1 ? 'vote' : 'votes'}.` : `You lose by ${fmt(margin)} ${margin === 1 ? 'vote' : 'votes'}.`)
+          : h('p', 'rm-el-verdict', `${list[winner]?.name ?? ''} wins.`);
+        const tEl = h('h2', null, String(title));
+        tEl.id = titleId;
+        const card = h('div', 'rm-el-card',
+          h('header', 'rm-el-head', h('small', null, 'Election night'), tEl,
+            h('p', 'rm-el-stats', h('span', null, h('b', null, fmt(all)), ' votes'), tn ? h('span', null, h('b', null, tn), ' turnout') : null)),
+          h('div', 'rm-el-chart', ...cols.map((c) => c.col), stamp),
+          verdict,
+          h('div', 'rm-el-actions', contBtn()));
+        box.append(card);
+        const set = (x) => cols.forEach((c, i) => {
+          const g = x >= 1 ? 1 : x ** pace[i];
+          const v = c.c.votes * g;
+          c.bar.firstChild.style.transform = `scaleY(${(c.c.votes / max) * g})`;
+          c.num.style.bottom = `calc(${(c.c.votes / max) * g * 100}% + 8px)`;
+          c.num.textContent = fmt(v);
+          c.pct.textContent = all ? `${((v / all) * 100).toFixed(1)}%` : '';
+        });
+        set(0);
+        let stopTween = null;
+        extra.onFinish = () => {
+          stopTween?.();
+          set(1);
+          box.classList.add('is-done');
+          cols[winner]?.col.classList.add('is-win');
+          const w = cols[winner]?.col;
+          if (w) {
+            const a = w.getBoundingClientRect();
+            const b = stamp.parentElement.getBoundingClientRect();
+            stamp.style.left = `${a.left - b.left + a.width / 2}px`;
+          }
+        };
+        if (reduced()) return 0;
+        stopTween = tween(0, 1, 3000, set);
+        extra.stops.push(stopTween);
+        const slam = later(() => { if (!box.classList.contains('is-done')) extra.onFinish(); }, 3000 + 200);
+        extra.stops.push(() => unlater(slam));
+        return 3300;
+      },
+    });
+  }
+
+  // ---------- shop ----------
+
+  function closeShop() {
+    if (dead || !sh) return;
+    const s = sh;
+    sh = null;
+    if (cur?.shopp) settle(cur, null);
+    s.box.classList.add('is-leaving');
+    later(() => s.box.remove(), 300);
+  }
+
+  // The pre-round upgrade counter. A pick resolves its id and the card stays up, waiting for the next
+  // call with fresh state; Esc or "Done" resolves null and closes it.
+  function shop({ title = 'Before you head out…', cash: money = 0, items = [] } = {}) {
+    return new Promise((resolve) => {
+      if (dead) return;
+      const p = { resolve, fallback: null, shopp: true };
+      begin(p);
+      stack.classList.add('is-hidden');
+      const list = (Array.isArray(items) ? items : []).slice(0, 8);
+      const fresh = !sh;
+      if (fresh) {
+        const box = el('div', 'rm-shop');
+        box.innerHTML = `
+          <div class="rm-sh-card" role="dialog" aria-modal="true" aria-labelledby="${id}-sh-title">
+            <header class="rm-sh-head">
+              <div><small>The counter</small><h2 id="${id}-sh-title"></h2></div>
+              <div class="rm-sh-cash"><small>Your cash</small><b></b></div>
+            </header>
+            <div class="rm-sh-items" role="group"></div>
+            <footer class="rm-sh-foot"><span class="rm-sh-note" role="status"></span><button type="button" class="rm-btn rm-sh-done"><kbd>Esc</kbd><span>Done</span></button></footer>
+          </div>`;
+        layer.insertBefore(box, calloutEl);
+        const q = (sel) => box.querySelector(sel);
+        sh = { box, title: q('.rm-sh-head h2'), cash: q('.rm-sh-cash b'), grid: q('.rm-sh-items'), note: q('.rm-sh-note'), done: q('.rm-sh-done'), shown: null, owned: new Set(), noteT: 0 };
+        sh.done.addEventListener('click', () => closeShop());
+      }
+      const S = sh;
+      S.title.textContent = String(title);
+      const wallet = typeof money === 'number' ? money : Number(String(money).replace(/[$,]/g, ''));
+      const finite = Number.isFinite(wallet);
+      const unlimited = typeof money === 'string' && money.includes('∞');
+      // The cash tag ticks to its new value after a purchase.
+      const paint = (x) => { S.cash.textContent = cash(x); };
+      if (!finite) {
+        rich(S.cash, String(money));
+        S.shown = null;
+      } else if (S.shown == null || S.shown === wallet || reduced()) {
+        paint(wallet);
+        S.shown = wallet;
+      } else {
+        const from = S.shown;
+        S.shown = wallet;
+        tween(from, wallet, 600, (x) => paint(Math.round(x * 100) / 100));
+        restart(S.cash, 'is-bump');
+      }
+      let ready = false;
+      let picked = false;
+      let idx = 0;
+      let btns = [];
+      const ok = (o) => !o.owned && (o.afford ?? (unlimited || (finite && Number(o.price) <= wallet)));
+      const setActive = (i, focus) => {
+        idx = i;
+        btns.forEach((b, k) => b.classList.toggle('is-active', k === i));
+        if (focus) btns[i]?.focus({ preventScroll: true });
+      };
+      const say = (msg) => {
+        S.note.replaceChildren(el('span', null, msg));
+        restart(S.note, 'is-on');
+        unlater(S.noteT);
+        S.noteT = later(() => S.note.classList.remove('is-on'), 2200);
+      };
+      const choose = (i) => {
+        if (picked || !ready) return;
+        if (i >= list.length) return closeShop();
+        const o = list[i];
+        if (!ok(o)) {
+          setActive(i, true);
+          restart(btns[i], 'is-nope');
+          say(o.owned ? `${o.label} is already yours` : `Need ${cash(Math.max(0, Number(o.price) - (finite ? wallet : 0)))} more`);
+          return;
+        }
+        picked = true;
+        setActive(i);
+        btns[i].classList.add('is-picked');
+        S.box.classList.add('is-waiting');
+        p.waiting = true;
+        p.resolve(o.id);
+      };
+      const move = (k) => {
+        const n = btns.length;
+        const cols = getComputedStyle(S.grid).gridTemplateColumns.split(' ').length;
+        const last = list.length;
+        let i = idx;
+        if (k === 'ArrowRight') i = (i + 1) % n;
+        else if (k === 'ArrowLeft') i = (i + n - 1) % n;
+        else if (k === 'ArrowDown') i = i === last ? 0 : i + cols < last ? i + cols : last;
+        else i = i === last ? Math.max(0, last - 1) : i - cols >= 0 ? i - cols : last;
+        setActive(i, true);
+      };
+      p.stop = () => { unlater(S.noteT); };
+      p.advance = () => {};
+      p.key = (e) => {
+        if (e.key === 'Escape' || e.key === 'Backspace') {
+          e.preventDefault();
+          if (!e.repeat) closeShop();
+          return;
+        }
+        if (p.waiting || !ready) return;
+        if (/^[1-9]$/.test(e.key)) {
+          if (+e.key <= list.length) { e.preventDefault(); choose(+e.key - 1); }
+        } else if (e.key.startsWith('Arrow')) {
+          e.preventDefault();
+          move(e.key);
+        } else if (isAdvance(e) && !btns.includes(document.activeElement)) {
+          e.preventDefault();
+          if (!e.repeat) choose(idx);
+        }
+      };
+
+      const prevOwned = S.owned;
+      S.owned = new Set(list.filter((o) => o.owned).map((o) => String(o.id)));
+      S.box.classList.remove('is-waiting');
+      btns = list.map((o, i) => {
+        const can = ok(o);
+        const b = el('button', `rm-sh-item${o.owned ? ' is-owned' : can ? ' is-afford' : ' is-short'}${o.owned && !prevOwned.has(String(o.id)) && !fresh ? ' is-new' : ''}`);
+        b.type = 'button';
+        b.style.setProperty('--i', i);
+        const gl = o.glyph && GLYPHS[o.glyph] ? o.glyph : 'spark';
+        b.style.setProperty('--c', GLYPH_COLOURS[gl] || '#e9b23a');
+        b.setAttribute('aria-keyshortcuts', String(i + 1));
+        if (!can && !o.owned) b.setAttribute('aria-disabled', 'true');
+        const key = h('span', 'rm-key', String(i + 1));
+        key.setAttribute('aria-hidden', 'true');
+        const tile = el('span', 'rm-sh-tile');
+        tile.innerHTML = GLYPHS[gl];
+        const price = o.owned
+          ? h('span', 'rm-sh-stamp', 'Owned')
+          : can ? h('span', 'rm-sh-price', cash(Number(o.price) || 0))
+            : h('span', 'rm-sh-need', `Need ${cash(Math.max(0, (Number(o.price) || 0) - (finite ? wallet : 0)))}`);
+        b.append(key, h('span', 'rm-sh-tile-w', tile), h('span', 'rm-sh-body', h('b', null, String(o.label)), o.text ? h('small', null, String(o.text)) : null), price);
+        if (o.owned) b.append(el('span', 'rm-sr', 'Owned.'));
+        else if (!can) b.append(el('span', 'rm-sr', `Cannot afford. Costs ${cash(Number(o.price) || 0)}.`));
+        else b.append(el('span', 'rm-sr', `Costs ${cash(Number(o.price) || 0)}.`));
+        b.addEventListener('click', () => choose(i));
+        b.addEventListener('focus', () => setActive(i));
+        b.addEventListener('pointerenter', (e) => {
+          if (e.pointerType !== 'mouse' || picked) return;
+          if (btns.includes(document.activeElement) && document.activeElement !== b) document.activeElement.blur();
+          setActive(i);
+        });
+        return b;
+      });
+      const doneBtn = S.done;
+      S.grid.replaceChildren(...btns);
+      S.grid.dataset.n = String(list.length);
+      btns.push(doneBtn);
+      doneBtn.onfocus = () => setActive(btns.length - 1);
+      doneBtn.onpointerenter = (e) => { if (e.pointerType === 'mouse' && !picked) { document.activeElement?.blur?.(); setActive(btns.length - 1); } };
+      const firstOk = list.findIndex((o) => ok(o));
+      ready = true;
+      setActive(firstOk >= 0 ? firstOk : list.length);
+      if (window.matchMedia('(hover: hover)').matches) later(() => { if (cur === p) btns[idx]?.focus({ preventScroll: true }); }, fresh ? 500 : 60);
+    });
+  }
+
+  // ---------- property deed ----------
+
+  function property({ address = '', kind = '', owner = '', tenants = [], price, income, options = [] } = {}) {
+    return new Promise((resolve) => {
+      if (dead) return;
+      const p = { resolve, fallback: null };
+      begin(p);
+      const opts = (Array.isArray(options) ? options : []).slice(0, 4);
+      const titleId = `${id}-pr-title`;
+      const yours = /^(you|yours|player|me)$/i.test(String(owner).trim());
+      const forSale = !String(owner ?? '').trim();
+      const box = el('div', 'rm-prop');
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-modal', 'true');
+      box.setAttribute('aria-labelledby', titleId);
+      const tEl = h('h2', null, String(address));
+      tEl.id = titleId;
+      const rows = (Array.isArray(tenants) ? tenants : []).slice(0, 8);
+      const late = rows.filter((t) => t.paying === false).length;
+      const stampText = yours ? 'Yours' : forSale ? 'For sale' : 'Taken';
+      const stamp = h('span', `rm-pr-stamp${yours ? ' is-yours' : forSale ? ' is-sale' : ' is-taken'}`, h('span', null, stampText));
+      stamp.style.filter = `url(#${id}-ink)`;
+      const tagCash = (n) => (typeof n === 'number' ? cash(n) : String(n));
+      const btns = opts.map((o, i) => {
+        const b = el('button', `rm-pr-opt${o.disabled ? ' is-disabled' : ''}`);
+        b.type = 'button';
+        b.style.setProperty('--i', i);
+        b.setAttribute('aria-keyshortcuts', String(i + 1));
+        if (o.disabled) b.setAttribute('aria-disabled', 'true');
+        const key = h('span', 'rm-key', String(i + 1));
+        key.setAttribute('aria-hidden', 'true');
+        b.append(key, h('span', 'rm-pr-opt-t', h('b', null, String(o.label)), o.hint ? h('small', null, String(o.hint)) : null));
+        return b;
+      });
+      const card = h('div', 'rm-pr-card',
+        h('div', 'rm-pr-body',
+          h('header', 'rm-pr-head',
+            h('small', null, 'Title deed'),
+            tEl,
+            kind ? h('p', 'rm-pr-kind', String(kind)) : null,
+            h('p', 'rm-pr-owner', h('span', null, 'Owner'), h('b', null, yours ? 'You' : forSale ? 'Nobody. It’s on the market' : String(owner)))),
+          stamp,
+          h('div', 'rm-pr-money',
+            price != null && price !== '' ? h('div', 'rm-pr-tag', h('small', null, 'Price'), h('b', null, tagCash(price))) : null,
+            income != null && income !== '' ? h('div', 'rm-pr-tag is-inc', h('small', null, 'Income'), h('b', null, `${tagCash(income)}`, h('i', null, '/day'))) : null),
+          rows.length ? h('div', 'rm-pr-tenants',
+            h('h3', null, 'Tenants', late ? h('span', null, `${late} late`) : null),
+            h('ul', null, ...rows.map((t) => h('li', null, h('span', 'rm-pr-tn', String(t.name)), el('i'), h('span', 'rm-pr-rent', t.rent != null ? `${tagCash(t.rent)}` : ''), h('span', `rm-pr-pay ${t.paying === false ? 'is-late' : 'is-paid'}`, t.paying === false ? 'Late' : 'Paid'))))) : null),
+        (() => { const g = h('div', 'rm-pr-opts', ...btns); g.setAttribute('role', 'group'); g.dataset.n = String(btns.length); return g; })(),
+        h('button', 'rm-pr-x', h('kbd', null, 'Esc'), h('span', null, 'Walk away')));
+      box.append(card);
+      layer.insertBefore(box, calloutEl);
+      const xBtn = card.querySelector('.rm-pr-x');
+      let ready = false;
+      let picked = false;
+      let idx = -1;
+      const setActive = (i, focus) => {
+        idx = i;
+        btns.forEach((b, k) => b.classList.toggle('is-active', k === i));
+        if (focus) btns[i]?.focus({ preventScroll: true });
+      };
+      const leaveWith = (v) => {
+        if (picked) return;
+        picked = true;
+        box.classList.add('is-leaving');
+        later(() => settle(p, v), 240);
+      };
+      const choose = (i) => {
+        if (!ready || picked || !opts[i]) return;
+        if (opts[i].disabled) {
+          setActive(i, true);
+          restart(btns[i], 'is-nope');
+          return;
+        }
+        setActive(i);
+        btns[i].classList.add('is-picked');
+        btns.forEach((b) => { b.disabled = true; });
+        later(() => leaveWith(opts[i].id), 220);
+      };
+      const at = later(() => { ready = true; box.classList.add('is-ready'); const f = opts.findIndex((o) => !o.disabled); if (f >= 0 && window.matchMedia('(hover: hover)').matches) setActive(f, true); }, reduced() ? 0 : 650);
+      if (reduced()) { unlater(at); ready = true; box.classList.add('is-ready'); }
+      btns.forEach((b, i) => {
+        b.addEventListener('click', () => choose(i));
+        b.addEventListener('focus', () => setActive(i));
+        b.addEventListener('pointerenter', (e) => {
+          if (e.pointerType !== 'mouse' || picked || !ready) return;
+          if (btns.includes(document.activeElement) && document.activeElement !== b) document.activeElement.blur();
+          setActive(i);
+        });
+      });
+      xBtn.addEventListener('click', () => leaveWith(null));
+      p.stop = () => { unlater(at); box.remove(); };
+      p.key = (e) => {
+        if (e.key === 'Escape' || e.key === 'Backspace') {
+          e.preventDefault();
+          if (!e.repeat) leaveWith(null);
+          return;
+        }
+        if (!ready || picked) return;
+        if (/^[1-4]$/.test(e.key)) {
+          if (+e.key <= opts.length) { e.preventDefault(); choose(+e.key - 1); }
+        } else if (e.key.startsWith('Arrow') && btns.length) {
+          e.preventDefault();
+          const d = e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 1;
+          setActive(idx < 0 ? (d > 0 ? 0 : btns.length - 1) : (idx + d + btns.length) % btns.length, true);
+        } else if (e.key === 'Enter' && idx >= 0 && !btns.includes(document.activeElement)) {
+          e.preventDefault();
+          if (!e.repeat) choose(idx);
+        }
+      };
+    });
+  }
+
+  // ---------- pizza shop rush ----------
+
+  const ktTopping = (n) => {
+    const k = String(n ?? '').toLowerCase();
+    return KT_TOP.find((t) => k.includes(t)) || KT_TOP[hashSeed(k) % KT_TOP.length];
+  };
+  // Score for one pizza; the same numbers feed the tips so a fast, golden pie pays best.
+  const ktScore = (tops, q, fresh, streak) => {
+    const base = 40 + 14 * tops;
+    if (q === 'raw' || q === 'burnt') return { pts: Math.round(base * 0.3), tip: 0 };
+    const bonus = q === 'perfect' ? 55 : 10;
+    const speed = Math.round(fresh ** 1.6 * 85);
+    const mult = 1 + Math.min(0.6, 0.12 * streak);
+    const tip = Math.round(fresh ** 1.2 * (1.5 + 0.8 * tops) * (q === 'perfect' ? 1.25 : 1) * 100) / 100;
+    return { pts: Math.round((base + bonus + speed) * mult), tip };
+  };
+
+  // A self-contained 2D toy kitchen over the dimmed city. Resolves { score, served, missed, tips, lines } when the clock runs out.
+  function kitchen({ title = 'Pizza shop rush', duration = 90, orders = [], upgrades = [] } = {}) {
+    const total = Math.max(5, Number(duration) || 90);
+    const ups = new Set((Array.isArray(upgrades) ? upgrades : []).map(String));
+    const stone = ups.has('stone-oven');
+    const prep = ups.has('prep-cook');
+    const loyal = ups.has('loyal-customers');
+    const BAKE = 2.6;
+    const ZONE = stone ? 0.32 : 0.2;
+    const queue = (Array.isArray(orders) ? orders : []).map((o, i) => {
+      const tops = (Array.isArray(o?.topping) ? o.topping : Array.isArray(o?.toppings) ? o.toppings : []).slice(0, 6).map(ktTopping);
+      const name = String(o?.name ?? `Customer ${i + 1}`);
+      const steps = ['dough', 'sauce', 'cheese', ...tops];
+      return { i, name, tops, steps, pm: 30 + steps.length * 2.5 + (hashSeed(name) % 6) };
+    });
+    return new Promise((resolve) => {
+      if (dead) return;
+      const T = { score: 0, served: 0, missed: 0, tips: 0, flubs: 0, perfect: 0, good: 0, raw: 0, burnt: 0, streak: 0, best: 0 };
+      const totals = () => ({
+        score: Math.max(0, Math.round(T.score)),
+        served: T.served,
+        missed: T.missed,
+        tips: Math.round(T.tips * 100) / 100,
+        lines: [
+          { label: 'Pizzas served', value: String(T.served) },
+          { label: 'Perfect bakes', value: String(T.perfect) },
+          { label: 'Raw or burnt', value: String(T.raw + T.burnt) },
+          { label: 'Customers lost', value: String(T.missed) },
+          { label: 'Flubs', value: String(T.flubs) },
+          { label: 'Best streak', value: String(T.best) },
+          { label: 'Tips', value: cash(Math.round(T.tips * 100) / 100, true) },
+        ],
+      });
+      const p = { resolve };
+      Object.defineProperty(p, 'fallback', { get: totals });
+      begin(p);
+      stack.classList.add('is-hidden');
+      let closed = false;
+      const box = el('div', 'rm-kitchen');
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-modal', 'true');
+      box.setAttribute('aria-label', String(title));
+      box.dataset.stage = 'count';
+      box.innerHTML = `
+        <div class="rm-kt-top">
+          <div class="rm-kt-title"><span></span><ul class="rm-kt-ups"></ul></div>
+          <div class="rm-kt-clock"><div class="rm-timer" role="timer" aria-label="Time left"><span>0:00</span></div></div>
+          <div class="rm-kt-sc"><div class="rm-score" role="group" aria-label="Score"><small>Score</small><b>0</b></div></div>
+        </div>
+        <div class="rm-kt-custs"></div>
+        <div class="rm-kt-order"><span class="rm-kt-for">Waiting for customers</span><ol class="rm-kt-steps"></ol></div>
+        <div class="rm-kt-mid">
+          <div class="rm-kt-stage">
+            <div class="rm-kt-peel"><svg class="rm-kt-pizza" viewBox="-104 -104 208 208" aria-hidden="true" focusable="false" stroke="#1b1a17" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"><circle class="rm-kt-ghost" r="92" fill="rgba(248,244,234,.35)" stroke-dasharray="3 9"/><g class="rm-kt-layers"></g><circle class="rm-kt-tan" r="90" fill="#7a3a10" stroke="none" opacity="0"/><circle r="92" fill="none"/></svg></div>
+            <div class="rm-kt-says" aria-hidden="true"></div>
+          </div>
+          <div class="rm-kt-oven">
+            <div class="rm-kt-oven-art">${KT_OVEN}</div>
+            <div class="rm-kt-heat">
+              <div class="rm-kt-ht"><i class="rm-kt-gz"></i><i class="rm-kt-pz"></i><span class="rm-kt-m"></span></div>
+              <div class="rm-kt-hl"><span>Raw</span><span class="rm-kt-gl">Golden</span><span>Burnt</span></div>
+            </div>
+            <button type="button" class="rm-kt-pull" tabindex="-1" aria-keyshortcuts="Space"><kbd>Space</kbd><span>Pull it out</span></button>
+          </div>
+        </div>
+        <div class="rm-kt-bins" role="group" aria-label="Ingredients"></div>
+        <p class="rm-kt-help"></p>
+        <span class="rm-sr" role="status"></span>`;
+      layer.insertBefore(box, calloutEl);
+      const q = (sel) => box.querySelector(sel);
+      const custsEl = q('.rm-kt-custs');
+      const forEl = q('.rm-kt-for');
+      const stepsEl = q('.rm-kt-steps');
+      const layersG = q('.rm-kt-layers');
+      const pizzaSvg = q('.rm-kt-pizza');
+      const tanEl = q('.rm-kt-tan');
+      const stageEl = q('.rm-kt-stage');
+      const saysEl = q('.rm-kt-says');
+      const ovenEl = q('.rm-kt-oven');
+      const heatEl = q('.rm-kt-heat');
+      const htEl = q('.rm-kt-ht');
+      const markEl = q('.rm-kt-m');
+      const pullBtn = q('.rm-kt-pull');
+      const binsEl = q('.rm-kt-bins');
+      const timerBox = q('.rm-timer');
+      const scoreB = q('.rm-score b');
+      const srEl = q('.rm-kitchen > .rm-sr');
+      q('.rm-kt-title span').textContent = String(title);
+      const upLabels = { 'stone-oven': 'Stone oven', 'prep-cook': 'Prep cook', 'loyal-customers': 'Loyal customers' };
+      q('.rm-kt-ups').append(...[...ups].filter((u) => upLabels[u]).map((u) => el('li', null, upLabels[u])));
+      q('.rm-kt-help').innerHTML = prep
+        ? '<b>1</b> Dough · sauce and cheese go on by themselves · <b>4–8</b> toppings in order · <b>Space</b> pulls the pizza when the marker is gold'
+        : '<b>1</b> Dough · <b>2</b> Sauce · <b>3</b> Cheese · <b>4–8</b> toppings in order · <b>Space</b> pulls the pizza when the marker is gold';
+
+      const bins = KT_STEPS.map((id, i) => {
+        const b = el('button', 'rm-kt-bin');
+        b.type = 'button';
+        b.tabIndex = -1;
+        b.dataset.id = id;
+        b.setAttribute('aria-keyshortcuts', String(i + 1));
+        b.setAttribute('aria-label', `${i + 1}, ${KT_LABEL[id]}`);
+        const ic = el('span', 'rm-kt-bin-ic');
+        ic.innerHTML = KT_ICON[id];
+        const key = h('span', 'rm-key', String(i + 1));
+        key.setAttribute('aria-hidden', 'true');
+        b.append(ic, h('span', 'rm-kt-bin-nm', KT_LABEL[id]), key);
+        b.addEventListener('pointerdown', (e) => { e.preventDefault(); press(id); });
+        b.addEventListener('mousedown', (e) => e.preventDefault());
+        return b;
+      });
+      binsEl.append(...bins);
+      pullBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); pull(); });
+      pullBtn.addEventListener('mousedown', (e) => e.preventDefault());
+
+      // ---- state ----
+      const S = { t: 0, left: total, stage: 'count', i: 0, m: 0, slide: 0, zc: 0.55, pause: 0, qi: 0, nextAt: 0, over: false, shownSecs: -1 };
+      const cust = [];
+      const say = (text, tone = '') => {
+        const n = el('span', `rm-kt-say${tone ? ` is-${tone}` : ''}`, text);
+        saysEl.append(n);
+        later(() => n.remove(), 1000);
+      };
+      const announce = (m) => { srEl.textContent = m; };
+      const setStage = (st) => { S.stage = st; box.dataset.stage = st; };
+
+      const slotsOf = () => {
+        const out = [];
+        for (let k = 0; k < 3; k++) {
+          const slot = custsEl.children[k] || custsEl.appendChild(el('div', 'rm-kt-slot'));
+          out.push(slot);
+        }
+        return out;
+      };
+      const mood = (f) => (f > 0.6 ? 'happy' : f > 0.3 ? 'fine' : 'angry');
+      const paintSlots = () => {
+        const slots = slotsOf();
+        slots.forEach((slot, k) => {
+          const c = cust[k];
+          if (!c) {
+            if (!slot.querySelector('.rm-kt-empty')) slot.replaceChildren(h('div', 'rm-kt-empty', h('span', null, 'Empty chair')));
+            return;
+          }
+          if (c.el.parentElement !== slot) slot.replaceChildren(c.el);
+          c.el.classList.toggle('is-front', k === 0);
+        });
+      };
+      const buildCust = (c) => {
+        const face = el('span', 'rm-kt-face');
+        face.innerHTML = portrait(c.name).svg;
+        const fill = el('i');
+        const bar = h('span', 'rm-kt-pat', fill);
+        bar.setAttribute('role', 'meter');
+        bar.setAttribute('aria-valuemin', '0');
+        bar.setAttribute('aria-valuemax', '100');
+        bar.setAttribute('aria-label', `${c.name}'s patience`);
+        const md = el('span', 'rm-kt-md');
+        const first = c.name.split(/\s+/)[0];
+        const nm = h('b', 'rm-kt-nm', first);
+        nm.title = c.name;
+        const tip = el('span', 'rm-kt-tip');
+        const tops = h('span', 'rm-kt-tops', ...c.tops.slice(0, 4).map((t) => { const i = el('i'); i.innerHTML = KT_ICON[t]; return i; }));
+        c.el = h('div', 'rm-kt-cust', face, h('div', 'rm-kt-ci', nm, tops), md, bar, tip);
+        c.fill = fill;
+        c.bar = bar;
+        c.md = md;
+        c.tip = tip;
+        c.tier = '';
+      };
+      const paintCust = (c) => {
+        const f = clamp(c.pat / c.pm, 0, 1);
+        if (Math.abs(f - (c.lastF ?? -1)) > 0.002) {
+          c.lastF = f;
+          c.fill.style.transform = `scaleX(${f})`;
+          c.bar.setAttribute('aria-valuenow', String(Math.round(f * 100)));
+          const tier = f > 0.6 ? 'ok' : f > 0.3 ? 'mid' : 'low';
+          if (tier !== c.tier) {
+            c.tier = tier;
+            c.el.dataset.tier = tier;
+            c.md.innerHTML = moodFace(mood(f));
+          }
+        }
+      };
+
+      const paintSteps = () => {
+        const c = cust[0];
+        stepsEl.replaceChildren();
+        if (!c) {
+          forEl.textContent = S.qi >= queue.length ? 'All caught up' : 'Waiting for customers';
+          return;
+        }
+        forEl.replaceChildren(el('i', null, 'Now serving '), h('b', null, c.name));
+        c.steps.forEach((id, k) => {
+          const li = el('li', 'rm-kt-step');
+          li.dataset.id = id;
+          const auto = prep && (k === 1 || k === 2);
+          const ic = el('span', 'rm-kt-step-ic');
+          ic.innerHTML = KT_ICON[id];
+          li.append(ic, h('b', null, auto ? 'auto' : String(KT_STEPS.indexOf(id) + 1)));
+          li.setAttribute('aria-label', `${KT_LABEL[id]}${auto ? ', automatic' : `, key ${KT_STEPS.indexOf(id) + 1}`}`);
+          if (auto) li.classList.add('is-auto');
+          stepsEl.append(li);
+        });
+        markSteps();
+      };
+      const markSteps = () => {
+        [...stepsEl.children].forEach((li, k) => {
+          li.classList.toggle('is-done', k < S.i);
+          li.classList.toggle('is-now', k === S.i && S.stage === 'build');
+        });
+        box.dataset.next = S.stage === 'build' && cust[0] ? String(KT_STEPS.indexOf(cust[0].steps[S.i]) + 1) : '';
+      };
+
+      const clearPizza = () => {
+        layersG.replaceChildren();
+        tanEl.setAttribute('opacity', '0');
+        stageEl.classList.remove('is-baking', 'is-serve', 'is-burnt');
+        ovenEl.classList.remove('is-baking');
+        markEl.style.left = '0%';
+        htEl.classList.remove('is-live');
+        box.dataset.pos = '0';
+      };
+      const addLayer = (id, k = 0, delay = 0) => {
+        const put = () => { if (!closed) layersG.insertAdjacentHTML('beforeend', ktLayer(id, k)); };
+        if (delay) later(put, delay); else put();
+      };
+
+      const startOrder = () => {
+        S.i = 0;
+        clearPizza();
+        if (cust[0]) setStage('build'); else setStage('wait');
+        paintSteps();
+      };
+
+      const addCustomer = () => {
+        const o = queue[S.qi];
+        if (!o) return;
+        S.qi += 1;
+        const c = { ...o, pat: o.pm, lastF: -1 };
+        buildCust(c);
+        cust.push(c);
+        paintCust(c);
+        paintSlots();
+        c.el.classList.add('is-in');
+        announce(`${c.name} walks in.`);
+        if (cust.length === 1) startOrder();
+        S.nextAt = S.t + (cust.length >= 2 ? 5 : 2.5);
+      };
+
+      const popScore = () => {
+        stopScore?.();
+        const from = shownScore;
+        stopScore = tween(from, T.score, 320, (x) => { shownScore = x; scoreB.textContent = fmt(Math.max(0, x)); });
+        restart(scoreB, 'is-bump');
+      };
+      let shownScore = 0;
+      let stopScore = null;
+
+      const drop = (c, how) => {
+        const k = cust.indexOf(c);
+        if (k < 0) return;
+        cust.splice(k, 1);
+        c.el.classList.add(how === 'served' ? 'is-served' : 'is-left');
+        later(() => { if (c.el.isConnected) c.el.remove(); paintSlots(); }, 420);
+        S.nextAt = Math.min(S.nextAt, S.t + 2.2);
+      };
+
+      const lose = (c) => {
+        const front = cust[0] === c;
+        T.missed += 1;
+        T.streak = 0;
+        T.score -= 75;
+        popScore();
+        c.el.dataset.tier = 'gone';
+        c.tip.textContent = 'Left!';
+        c.tip.className = 'rm-kt-tip is-bad';
+        announce(`${c.name} gave up and left.`);
+        say('Left!', 'bad');
+        drop(c, 'left');
+        if (front) {
+          S.pause = 0.5;
+          setStage('serve');
+          stageEl.classList.add('is-serve');
+        }
+      };
+
+      const press = (id) => {
+        if (closed || S.over) return;
+        const bin = bins[KT_STEPS.indexOf(id)];
+        if (S.stage !== 'build' || !cust[0]) return;
+        const c = cust[0];
+        const need = c.steps[S.i];
+        if (prep && (id === 'sauce' || id === 'cheese') && S.i >= 3) return;
+        if (id === need) {
+          restart(bin, 'is-hit');
+          const tk = c.steps.slice(0, S.i).filter((x) => x === id).length;
+          addLayer(id, KT_TOP.indexOf(id) + tk);
+          S.i += 1;
+          if (prep && id === 'dough') {
+            addLayer('sauce', 0, 280);
+            addLayer('cheese', 0, 560);
+            S.i = 3;
+          }
+          markSteps();
+          if (S.i >= c.steps.length) {
+            setStage('bake');
+            startBake(c);
+          }
+        } else {
+          T.flubs += 1;
+          T.streak = 0;
+          c.pat = Math.max(0.01, c.pat - c.pm * 0.07);
+          restart(bin, 'is-flub');
+          restart(stageEl, 'is-shake');
+          restart(c.el, 'is-hurt');
+          say('Flub!', 'bad');
+        }
+      };
+
+      const startBake = (c) => {
+        const r = seeded(`z${c.i}-${S.qi}`);
+        S.zc = 0.46 + r() * 0.26;
+        S.m = 0;
+        S.slide = 0.35;
+        heatEl.style.setProperty('--z0', `${((S.zc - ZONE / 2) * 100).toFixed(2)}%`);
+        heatEl.style.setProperty('--zw', `${(ZONE * 100).toFixed(2)}%`);
+        heatEl.style.setProperty('--pw', `${(ZONE * 0.4 * 100).toFixed(2)}%`);
+        heatEl.style.setProperty('--pz', `${((S.zc - ZONE * 0.2) * 100).toFixed(2)}%`);
+        htEl.dataset.z0 = (S.zc - ZONE / 2).toFixed(3);
+        htEl.dataset.z1 = (S.zc + ZONE / 2).toFixed(3);
+        htEl.dataset.zc = S.zc.toFixed(3);
+        htEl.classList.add('is-live');
+        stageEl.classList.add('is-baking');
+        ovenEl.classList.add('is-baking');
+        box.dataset.next = '';
+        markSteps();
+      };
+
+      const judge = () => {
+        const z0 = S.zc - ZONE / 2;
+        const z1 = S.zc + ZONE / 2;
+        if (S.slide > 0 || S.m < z0) return 'raw';
+        if (S.m > z1) return 'burnt';
+        return Math.abs(S.m - S.zc) <= ZONE * 0.2 ? 'perfect' : 'good';
+      };
+
+      const serve = (qual) => {
+        const c = cust[0];
+        if (!c) return;
+        const fresh = clamp(c.pat / c.pm, 0, 1);
+        T[qual] += 1;
+        const good = qual === 'perfect' || qual === 'good';
+        const r = ktScore(c.tops.length, qual, fresh, T.streak);
+        T.score += r.pts;
+        T.tips += r.tip;
+        T.served += 1;
+        if (good) {
+          T.streak += 1;
+          T.best = Math.max(T.best, T.streak);
+        } else T.streak = 0;
+        popScore();
+        c.tip.textContent = r.tip ? `+${cash(r.tip, true)}` : `+${r.pts}`;
+        c.tip.className = `rm-kt-tip ${good ? 'is-good' : 'is-bad'}`;
+        say({ perfect: 'Perfect!', good: 'Nice!', raw: 'Raw!', burnt: 'Burnt!' }[qual], good ? 'good' : 'bad');
+        saysEl.append(el('span', `rm-kt-say is-pts${good ? '' : ' is-bad'}`, `+${r.pts}`));
+        later(() => saysEl.lastChild?.remove(), 1000);
+        announce(`${c.name}: ${qual} pizza, ${r.pts} points${r.tip ? `, ${cash(r.tip, true)} tip` : ''}.`);
+        stageEl.classList.add('is-serve');
+        stageEl.classList.toggle('is-burnt', qual === 'burnt');
+        c.el.classList.add(good ? 'is-happy' : 'is-sour');
+        drop(c, 'served');
+        S.pause = 0.55;
+        setStage('serve');
+        markSteps();
+      };
+
+      const pull = () => {
+        if (closed || S.over) return;
+        if (S.stage === 'bake') serve(judge());
+        else if (S.stage === 'build') restart(ovenEl, 'is-nope');
+      };
+
+      // ---- loop ----
+      const paintHeat = () => {
+        markEl.style.left = `${(clamp(S.m, 0, 1) * 100).toFixed(2)}%`;
+        box.dataset.pos = S.m.toFixed(3);
+        const z0 = S.zc - ZONE / 2;
+        const z1 = S.zc + ZONE / 2;
+        if (S.m < z0) tanEl.setAttribute('opacity', '0');
+        else if (S.m <= z1) tanEl.setAttribute('opacity', '0.16');
+        else tanEl.setAttribute('opacity', String(0.16 + ((S.m - z1) / (1 - z1)) * 0.6));
+        stageEl.classList.toggle('is-gold', S.m >= z0 && S.m <= z1);
+      };
+
+      const finish = () => {
+        if (S.over) return;
+        S.over = true;
+        setStage('over');
+        stopLoop?.();
+        hud.callout(S.left <= 0 ? 'TIME!' : 'DONE!');
+        later(() => {
+          if (closed) return;
+          box.classList.add('is-leaving');
+          later(() => settle(p, totals()), 260);
+        }, 1400);
+      };
+
+      const step = (dt) => {
+        if (closed || S.over) return;
+        S.t += dt;
+        S.left = Math.max(0, S.left - dt);
+        const secs = Math.ceil(S.left);
+        if (secs !== S.shownSecs) {
+          S.shownSecs = secs;
+          timerBox.firstChild.textContent = clock(secs);
+          const urgent = S.left < 10;
+          timerBox.classList.toggle('is-urgent', urgent);
+          if (urgent) restart(timerBox, 'is-tick');
+        }
+        if (S.qi < queue.length && cust.length < 3 && S.t >= S.nextAt) addCustomer();
+        const drain = loyal ? 0.65 : 1;
+        for (const c of [...cust]) {
+          c.pat -= dt * drain;
+          if (c.pat <= 0) lose(c);
+          else paintCust(c);
+        }
+        if (S.stage === 'bake') {
+          if (S.slide > 0) S.slide -= dt;
+          else S.m += dt / BAKE;
+          if (S.m >= 1) {
+            S.m = 1;
+            paintHeat();
+            serve('burnt');
+          } else paintHeat();
+        } else if (S.stage === 'serve') {
+          S.pause -= dt;
+          if (S.pause <= 0) startOrder();
+        } else if (S.stage === 'wait' && cust[0]) startOrder();
+        if (S.left <= 0 || (S.qi >= queue.length && !cust.length && S.stage !== 'serve')) finish();
+      };
+
+      let raf = 0;
+      let last = 0;
+      let stopLoop = null;
+      const startLoop = () => {
+        const frame = (now) => {
+          raf = requestAnimationFrame(frame);
+          const dt = last ? Math.min(0.1, (now - last) / 1000) : 0;
+          last = now;
+          step(dt);
+        };
+        raf = requestAnimationFrame(frame);
+        stopLoop = () => { cancelAnimationFrame(raf); cancels.delete(stopLoop); };
+        cancels.add(stopLoop);
+      };
+
+      p.stop = () => {
+        closed = true;
+        stopLoop?.();
+        stopScore?.();
+        box.remove();
+      };
+      p.advance = () => {};
+      p.key = (e) => {
+        if (e.key === 'Tab') { e.preventDefault(); return; }
+        if (e.repeat) { if (e.key === ' ' || /^[1-8]$/.test(e.key)) e.preventDefault(); return; }
+        if (/^[1-8]$/.test(e.key)) { e.preventDefault(); press(KT_STEPS[+e.key - 1]); }
+        else if (e.key === ' ') { e.preventDefault(); pull(); }
+      };
+
+      // ---- go ----
+      slotsOf();
+      paintSlots();
+      timerBox.firstChild.textContent = clock(total);
+      const go = (n) => {
+        if (closed || cur !== p) return Promise.resolve(false);
+        return hud.callout(n).then(() => !closed && cur === p);
+      };
+      go('3').then((ok) => ok && go('2')).then((ok) => ok && go('1')).then((ok) => {
+        if (!ok) return;
+        hud.callout('GO!');
+        setStage('wait');
+        S.nextAt = 0;
+        startLoop();
+      });
+    });
+  }
+
   function fade(to, ms = 600) {
     if (dead) return Promise.resolve();
     const target = clamp(Number(to) || 0, 0, 1);
@@ -1516,6 +2845,13 @@ export function createUI(root) {
     memories,
     results,
     unlock,
+    ledger,
+    decision,
+    election,
+    shop,
+    closeShop,
+    property,
+    kitchen,
     fade,
     destroy() {
       if (dead) return;
@@ -1529,6 +2865,7 @@ export function createUI(root) {
       observers.forEach((ro) => ro.disconnect());
       observers.clear();
       tk = null;
+      sh = null;
       layer.remove();
       if (ownRoot) root.style.pointerEvents = rootPE;
     },

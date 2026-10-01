@@ -1179,3 +1179,249 @@ export function makePedestrian({ seed = 1, era = '2000', city = 'nyc' } = {}) {
   g.userData.far = [farG];
   return g;
 }
+
+// --- Final boss ---------------------------------------------------------------
+// A ~55 m toy kaiju: teal hide, cream belly, glowing violet dorsal plates, small arms, a thick tail.
+// Origin between the feet, facing -Z. userData: head, mouth, tailTip (world anchors), weakPoints (Object3Ds
+// with userData.radius, the glowing chest gem and two back plates), hitboxes ([{ node, r }] spheres that follow
+// the animation), feet, steps (counts footfalls; lastStep is the foot that landed), height.
+//   animate(t, speed, { roar, breath, hurt, frozen, swipe, aimYaw, aimPitch })
+//     roar/breath/hurt/frozen 0..1; swipe -1..1 swings the tail; aimYaw/aimPitch turn the head (radians).
+export function makeKaiju() {
+  const g = new THREE.Group();
+  g.name = 'kaiju';
+  const C = { skin: '#437a69', skinDk: '#2a4f48', belly: '#ecd9a6', bellyDk: '#e0cb96', bone: '#f4ecd2', plate: '#b06cff', eye: '#ffd23a', mouth: '#7a1f3d', ink: '#1a1f27' };
+  const bodyMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.78 });
+  const plateMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.4, emissive: '#8a3dff', emissiveIntensity: 0.6 });
+  const eyeMat = new THREE.MeshBasicMaterial({ vertexColors: true });
+  const coreMat = new THREE.MeshBasicMaterial({ color: '#ff6fe0' });
+  const throatMat = new THREE.MeshBasicMaterial({ color: '#ff5fb0' });
+  const H = 20.5, L1 = 11.6, L2 = 11.2, ANKLE = 1.4, STEP = 5, LIFT = 3.2;
+
+  const pivot = (parent, x, y, z) => { const p = new THREE.Group(); p.position.set(x, y, z); parent.add(p); return p; };
+  const hitboxes = [], weakPoints = [];
+  const hitbox = (parent, x, y, z, r) => { hitboxes.push({ node: pivot(parent, x, y, z), r }); };
+  const weak = (parent, x, y, z, r) => { const n = pivot(parent, x, y, z); n.userData.radius = r; weakPoints.push(n); return n; };
+  // A dorsal plate: a triangle in the y-z plane (apex leaning back), extruded along x, tilted about x.
+  const plate = (api, x, y, z, w, h, tilt, c = C.plate, d = 1.5) => api.extrude([[-w / 2, 0], [w * 0.14, h], [w / 2, 0]], d, x + d / 2, y, z, c, [tilt, -HALF, 0]);
+
+  const pelvis = pivot(g, 0, H, 0);
+  const pk = kit(), pb = pk.on(bodyMat);
+  pb.sph(6.4, 0, 0.5, 1.4, C.skin, null, [1.15, 0.92, 1.05]);
+  pk.into(pelvis);
+  hitbox(pelvis, 0, 1, 1.5, 9);
+
+  // Torso, neck and the back: leans forward from the hips.
+  const spine = pivot(pelvis, 0, 2.5, 0);
+  spine.rotation.x = -0.32;
+  const sk = kit(), sb = sk.on(bodyMat), sp = sk.on(plateMat), sc = sk.on(coreMat);
+  sb.sph(9.3, 0, 9, 0.4, C.skin, null, [0.96, 1.12, 0.92], 12, 9);
+  sb.sph(7.7, 0, 8.2, -3.4, C.belly, null, [0.88, 1.05, 0.5]);
+  sb.sph(7.6, 0, 16.6, -0.5, C.skin, null, [1.22, 0.86, 0.96]);
+  sb.sph(4.8, 0, 21.8, -3, C.skin, null, [1, 1.25, 1]);
+  for (const [y, z, w, h, tilt, core] of [[22.4, 3.6, 3.6, 4.4, 0.75], [19.2, 7, 5, 6.2, 0.6], [15.8, 8.5, 6.4, 8.6, 0.48, true], [12, 9.2, 6.6, 7.4, 0.36], [8.6, 9.4, 7, 9.6, 0.3, true], [5, 8.5, 6, 6.6, 0.24], [1.8, 6.9, 4.6, 5, 0.2]]) plate(core ? sc : sp, 0, y, z, w * 1.25, h * 1.3, tilt, core ? '#ffb0ee' : C.plate);
+  sc.geo(new THREE.OctahedronGeometry(2.7), true, 0, 14.4, -8.1, '#ffb0ee', null, [1, 1.45, 0.85]);
+  sb.sph(1.0, 0, 14.4, -7.3, C.ink, null, [2.1, 2.2, 0.5], 8, 6);
+  sk.into(spine);
+  hitbox(spine, 0, 15, -1.2, 10); hitbox(spine, 0, 6.5, -0.5, 9);
+  weak(spine, 0, 14.4, -8.6, 3.6); weak(spine, 0, 20.2, 9.2, 3.8); weak(spine, 0, 12.2, 11.2, 3.8);
+
+  // Head: boxy snout, glowing eyes, horns, teeth; the lower jaw swings on its own pivot.
+  const head = pivot(spine, 0, 25.2, -4.4);
+  head.scale.setScalar(1.25);
+  const hk = kit(), hb = hk.on(bodyMat), he = hk.on(eyeMat);
+  hb.sph(5.3, 0, 0.5, 0.6, C.skin, null, [1.02, 0.92, 1.05], 10, 8);
+  hb.loft([{ z: 0.5, w: 8.6, wt: 7.2, y0: -3.2, y1: 3.4 }, { z: -5.5, w: 6.8, wt: 5.8, y0: -2.7, y1: 2.9 }, { z: -11.4, w: 5.2, wt: 4.6, y0: -2.3, y1: 2 }], C.skin);
+  hb.sph(2.7, 0, -0.1, -11.3, C.skin, null, [1, 0.78, 0.8], 8, 6);
+  hb.box(7, 0.3, 11, 0, -2.5, -5.5, C.mouth);
+  for (const s of [-1, 1]) {
+    he.sph(1, s * 3.3, 1.9, -4.8, C.eye, [0, 0, s * -0.35], [1.15, 0.55, 0.8], 8, 6);
+    hb.box(3.6, 0.9, 2.4, s * 3.2, 2.75, -4.7, C.skinDk, [0, 0, s * 0.6]);
+    hb.sph(0.5, s * 1.1, 1.4, -11, C.ink, null, null, 6, 5);
+    hb.cyl(0, 1.1, 4.6, 6, s * 2.3, 4.8, 2.2, C.bone, [0.9, 0, s * -0.25]);
+    hb.cyl(0, 0.8, 3, 5, s * 4.9, 0.4, 0.6, C.bone, [0.7, 0, s * -1.1]);
+    for (let i = 0; i < 5; i++) { const z = -3.2 - i * 1.6; hb.cyl(0.5, 0, 1.3, 4, s * (3.4 - i * 0.28), -2.9 - (i > 2 ? 0 : 0.3) + (i * 0.1), z, C.bone); }
+  }
+  hk.into(head);
+  const throat = new THREE.Mesh(clean(new THREE.SphereGeometry(2.7, 12, 8), false), throatMat);
+  throat.position.set(0, -3.4, -2.6); throat.scale.set(1.05, 0.8, 1.3); head.add(throat);
+  const jaw = pivot(head, 0, -2.6, -0.8);
+  const jk = kit(), jb = jk.on(bodyMat);
+  jb.loft([{ z: 4.6, w: 7, y0: -1.5, y1: 0.3 }, { z: -3.5, w: 6, y0: -2, y1: 0.3 }, { z: -9.8, w: 3.9, y0: -1.5, y1: 0.2 }], C.skin);
+  jb.box(5.2, 0.3, 10.5, 0, 0.35, -2.5, C.mouth);
+  for (const s of [-1, 1]) for (let i = 0; i < 4; i++) jb.cyl(0, 0.42, 1.1, 4, s * (2.1 - i * 0.2), 0.9, -3.4 - i * 1.6, C.bone);
+  jk.into(jaw);
+  const mouth = pivot(head, 0, -1.8, -10.4);
+  hitbox(head, 0, 0, -3.5, 8);
+
+  // Arms: small, bent forward, three claws each.
+  const arms = [-1, 1].map((s) => {
+    const a = pivot(spine, s * 8.4, 16.2, -4.6), k = kit(), b = k.on(bodyMat);
+    b.sph(2.5, 0, 0, 0, C.skin);
+    b.cyl(1.5, 2.1, 5.5, 8, 0, -2.75, 0, C.skin);
+    b.sph(1.5, 0, -5.5, 0, C.skin, null, null, 8, 6);
+    b.cyl(1.2, 1.6, 4.6, 8, 0, -6.93, -1.8, C.skin, [0.9, 0, 0]);
+    b.sph(1.8, 0, -8.5, -3.7, C.skin, null, null, 8, 6);
+    for (const x of [-0.9, 0, 0.9]) b.cyl(0.5, 0, 1.9, 5, x, -9.3, -4.7, C.bone, [0.9, 0, 0]);
+    k.into(a);
+    return a;
+  });
+
+  // Legs: thigh, shin and foot on pivots, solved with two-bone IK each frame so planted feet stay planted.
+  const legs = [-1, 1].map((s, i) => {
+    const hip = pivot(pelvis, s * 6.2, 0, 0.5), shin = pivot(hip, 0, -L1, 0), foot = pivot(shin, 0, -L2, 0);
+    const tk = kit(), tb = tk.on(bodyMat);
+    tb.sph(4.6, 0, 0, 0, C.skin);
+    tb.cyl(3.9, 2.9, L1, 8, 0, -L1 / 2, 0, C.skin);
+    tb.sph(4.1, 0, -4, 1.3, C.skin, null, [1, 1.3, 1]);
+    tb.sph(3.1, 0, -L1, 0, C.skin);
+    tk.into(hip);
+    const sk2 = kit(), sb2 = sk2.on(bodyMat);
+    sb2.cyl(2.9, 1.8, L2, 8, 0, -L2 / 2, 0, C.skin);
+    sb2.sph(2.7, 0, -3, 1.2, C.skin, null, [1, 1.3, 1]);
+    sb2.sph(2, 0, -L2, 0, C.skin);
+    sk2.into(shin);
+    const fk = kit(), fb = fk.on(bodyMat);
+    fb.loft([{ z: 3, w: 4.2, y0: -ANKLE, y1: 1.2 }, { z: -3, w: 5.6, y0: -ANKLE, y1: 0.6 }, { z: -6.5, w: 5.2, y0: -ANKLE, y1: -0.2 }], C.skin);
+    for (const x of [-1.7, 0, 1.7]) fb.cyl(0, 0.75, 2.4, 5, x, -0.5, -7.6, C.bone, [-HALF, 0, 0]);
+    fk.into(foot);
+    hitbox(hip, 0, -5, 0.5, 6.4);
+    return { hip, shin, foot, s, i, prev: 0 };
+  });
+
+  // Tail: five tapering segments, each pivoting on the one before.
+  const TAIL = [[5, 4, 9, 0.5], [4, 3, 9, -0.08], [3, 2, 8, -0.12], [2, 1, 8, -0.18], [1, 0.3, 7, -0.22]];
+  const tail = [];
+  let parent = pivot(pelvis, 0, -2.5, 4.4);
+  TAIL.forEach(([r0, r1, len, droop], i) => {
+    const seg = pivot(parent, 0, 0, i ? TAIL[i - 1][2] : 0);
+    seg.userData.droop = droop;
+    const k = kit(), b = k.on(bodyMat), p = k.on(plateMat);
+    b.cyl(r1, r0, len, 8, 0, 0, len / 2, C.skin, [HALF, 0, 0]);
+    b.sph(r0, 0, 0, 0, C.skin, null, null, 8, 6);
+    if (i < 4) for (const f of [0.28, 0.72]) plate(p, 0, r0 + (r1 - r0) * f - 0.1, len * f, 3.6 - i * 0.55, 4.4 - i * 0.75, 0.5);
+    k.into(seg);
+    if (i && i < 4) hitbox(seg, 0, 0, len / 2, r0 + 1.6);
+    if (i === 0) hitbox(seg, 0, 0, 5, 6);
+    tail.push(seg); parent = seg;
+  });
+  const tailTip = pivot(parent, 0, 0, TAIL[4][2]);
+
+  g.userData = { ...g.userData, head, mouth, tailTip, weakPoints, hitboxes, feet: legs.map((l) => l.foot), steps: 0, lastStep: 0, height: 55 };
+
+  const tick = ticker();
+  const frostCol = new THREE.Color(), violet = new THREE.Color('#8a3dff'), hot = new THREE.Color('#ff3fb8'), icy = new THREE.Color('#7fd8ff'), pink = new THREE.Color('#ff6fe0'), throatBase = new THREE.Color('#ff5fb0');
+  const S = { amp: 0, s0: 0, roar: 0, breath: 0, hurt: 0, frozen: 0, swipe: 0, yaw: 0, pitch: 0 };
+  const ease = (u) => u * u * (3 - 2 * u);
+  const idleF = [1.4, -1.4];
+  const solve = (leg, F, D, toe) => {
+    const d = Math.min(L1 + L2 - 0.02, Math.max(Math.abs(L1 - L2) + 0.02, Math.hypot(F, D)));
+    const phi = Math.atan2(F, D);
+    const a = phi + Math.acos(THREE.MathUtils.clamp((L1 * L1 + d * d - L2 * L2) / (2 * L1 * d), -1, 1));
+    const b = phi - Math.acos(THREE.MathUtils.clamp((L2 * L2 + d * d - L1 * L1) / (2 * L2 * d), -1, 1));
+    leg.hip.rotation.x = a; leg.shin.rotation.x = b - a; leg.foot.rotation.x = -b + toe;
+  };
+  g.userData.animate = (t, speed = 0, ex = {}) => {
+    const dt = tick(t), k = (r) => 1 - Math.exp(-r * dt);
+    S.roar += ((ex.roar || 0) - S.roar) * k(9); S.breath += ((ex.breath || 0) - S.breath) * k(7);
+    S.hurt += ((ex.hurt || 0) - S.hurt) * k(14); S.frozen += ((ex.frozen || 0) - S.frozen) * k(6);
+    S.swipe += ((ex.swipe || 0) - S.swipe) * k(16);
+    S.yaw += ((ex.aimYaw || 0) - S.yaw) * k(5); S.pitch += ((ex.aimPitch || 0) - S.pitch) * k(5);
+    const live = 1 - 0.9 * S.frozen;
+    S.amp += (THREE.MathUtils.clamp(speed / 1.5, 0, 1) - S.amp) * k(5);
+    if (speed > 0.05) S.s0 = (S.s0 + dt * 0.6 * speed / (2 * STEP)) % 1;
+    const tw = Math.PI * 2 * S.s0, amp = S.amp;
+
+    pelvis.position.y = H - 0.45 * amp + Math.cos(tw * 2) * 0.55 * amp + Math.sin(t * 1.5) * 0.12 * live - S.hurt * 0.6;
+    pelvis.position.x = -Math.sin(tw) * 0.9 * amp;
+    spine.rotation.x = -0.32 + Math.sin(t * 1.5) * 0.012 * live + S.roar * 0.3 + S.breath * 0.1 + S.hurt * 0.14;
+    spine.rotation.y = -Math.sin(tw) * 0.08 * amp;
+    spine.rotation.z = Math.sin(tw) * 0.035 * amp;
+
+    head.rotation.set(S.pitch + S.roar * 0.5 + S.breath * 0.22 - S.hurt * 0.2 + Math.sin(t * 1.1) * 0.03 * live, S.yaw, 0);
+    jaw.rotation.x = -(S.roar * 0.62 + S.breath * 0.42 + S.hurt * 0.18 + 0.05 + Math.sin(t * 2) * 0.02 * live);
+    pelvis.rotation.set(-S.hurt * 0.03, Math.sin(tw) * 0.05 * amp, S.roar * Math.sin(t * 46) * 0.04);
+
+    arms[0].rotation.set(0.7 + Math.sin(tw) * 0.28 * amp - S.roar * 0.55, 0, -(0.12 + S.roar * 0.7 + Math.sin(t * 1.3) * 0.03 * live));
+    arms[1].rotation.set(0.7 - Math.sin(tw) * 0.28 * amp - S.roar * 0.55, 0, 0.12 + S.roar * 0.7 + Math.sin(t * 1.3 + 1) * 0.03 * live);
+
+    for (const leg of legs) {
+      const s = (S.s0 + leg.i * 0.5) % 1, stance = s < 0.6, u = stance ? s / 0.6 : (s - 0.6) / 0.4;
+      if (s < leg.prev - 0.5 && amp > 0.3) { g.userData.steps++; g.userData.lastStep = leg.i; }
+      leg.prev = s;
+      const F = idleF[leg.i] + ((stance ? STEP * (1 - 2 * u) : STEP * (-1 + 2 * ease(u))) - idleF[leg.i]) * amp;
+      const lift = stance ? 0 : LIFT * Math.sin(Math.PI * u) * amp;
+      const toe = amp * (stance ? -0.4 * ease(THREE.MathUtils.clamp((u - 0.7) / 0.3, 0, 1)) : -0.2 * Math.sin(Math.PI * u) + 0.12 * ease(THREE.MathUtils.clamp((u - 0.7) / 0.3, 0, 1)));
+      solve(leg, F, pelvis.position.y - ANKLE - lift, toe);
+      leg.hip.rotation.z = leg.s * 0.05;
+    }
+
+    let yaw = S.swipe;
+    tail.forEach((seg, i) => {
+      const sway = Math.sin(t * 1.4 - i * 0.8) * (0.07 + 0.03 * amp) * live + Math.sin(tw - i * 0.5) * 0.05 * amp;
+      seg.rotation.set(seg.userData.droop - S.hurt * 0.1 + (i === 0 ? S.roar * 0.1 : 0), sway + yaw * [0.55, 0.45, 0.35, 0.25, 0.2][i], 0);
+    });
+
+    frostCol.setRGB(1 - 0.38 * S.frozen, 1 - 0.18 * S.frozen, 1);
+    bodyMat.color.copy(frostCol);
+    const f = S.hurt * 0.45;
+    bodyMat.emissive.setRGB(f + 0.11 * S.frozen, f + 0.25 * S.frozen, f + 0.42 * S.frozen);
+    plateMat.emissive.copy(violet).lerp(hot, S.breath).lerp(icy, S.frozen);
+    plateMat.emissiveIntensity = (0.5 + 1.7 * S.breath + 0.2 * Math.sin(t * 3)) * (1 - 0.4 * S.frozen);
+    coreMat.color.copy(pink).lerp(icy, S.frozen * 0.7).multiplyScalar(0.95 + 0.3 * Math.sin(t * 5) + S.breath * 0.5);
+    throatMat.color.copy(throatBase).lerp(icy, S.frozen).multiplyScalar(0.3 + 1.5 * S.breath + S.roar * 0.4);
+  };
+  g.userData.animate(0, 0);
+  g.userData.animate(0.05, 0);
+  return g;
+}
+
+// The mayor's office: a civic dome with a flag and a gold light column, sized to stand on a tower's
+// top tier (12 m across). Origin at the roof. animate(t, 0, { alarm, fall }): alarm 0..1 flashes the
+// column red, fall 0..1 slumps the dome (the kaiju got there).
+export function makeCityHall() {
+  const g = new THREE.Group(), body = new THREE.Group();
+  g.name = 'cityHall';
+  g.add(body);
+  const stone = '#efe6cf', stoneDk = '#cdbf9c', green = '#4bb39a';
+  const k = kit(), lit = k.on(glow('#ffe9a8', 0.9));
+  k.box(11.8, 1.4, 11.8, 0, 0.7, 0, stoneDk);
+  k.box(10.8, 0.5, 10.8, 0, 1.65, 0, stone);
+  for (let i = 0; i < 12; i++) {
+    const a = i * TAU / 12, x = Math.cos(a) * 4.9, z = Math.sin(a) * 4.9;
+    k.cyl(0.38, 0.42, 3.4, 8, x, 3.9, z, stone);
+    k.cyl(0.55, 0.55, 0.3, 8, x, 2.05, z, stoneDk);
+  }
+  k.cyl(5.5, 5.6, 0.55, 24, 0, 5.85, 0, stoneDk);
+  k.cyl(4.1, 4.4, 2.2, 24, 0, 7.2, 0, stone);
+  for (let i = 0; i < 8; i++) { const a = i * TAU / 8 + TAU / 16; k.box(0.6, 1.1, 0.14, Math.cos(a) * 4.25, 7.3, Math.sin(a) * 4.25, P.glassDk, [0, -a - HALF, 0]); }
+  k.dome(4.3, 0, 8.3, 0, green, null, [1, 1.05, 1], 24, 8);
+  k.cyl(4.4, 4.4, 0.28, 24, 0, 8.35, 0, P.gold);
+  for (let i = 0; i < 8; i++) { const a = i * TAU / 8; k.box(0.14, 0.14, 4.4, Math.cos(a) * 2.2, 10.5, Math.sin(a) * 2.2, P.gold, [0.52, -a - HALF, 0]); }
+  k.cyl(0.95, 1.1, 1.3, 10, 0, 12.9, 0, stone);
+  k.dome(1.1, 0, 13.5, 0, P.gold, null, null, 10, 5);
+  k.cyl(0.07, 0.1, 8.5, 6, 0, 17.6, 0, P.white);
+  lit.sph(0.3, 0, 22, 0, null, null, null, 8, 6);
+  k.into(body);
+
+  const geo = bannerGeo(3.2, 1.9, 1, 3, '#e0322b', P.white), p = geo.attributes.position, FH = 1.9;
+  const flag = new THREE.Mesh(geo, cached('banner', () => new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide, roughness: 0.8 })));
+  flag.position.set(1.65, 21.5, 0);
+  body.add(flag);
+
+  const BH = 110;
+  const col = new THREE.Mesh(fade(new THREE.CylinderGeometry(0.8, 2.4, BH, 16, 1, true).translate(0, BH / 2 + 22, 0), (x, y) => Math.pow(Math.max(0, 1 - (y - 22) / BH), 0.8)), additive('#ffd66b', 0.26, true));
+  g.add(col);
+  const base = new THREE.Color('#ffd66b'), alert = new THREE.Color('#ff4b4b');
+  g.userData.beam = col;
+  g.userData.animate = (t, speed = 0, ex = {}) => {
+    const alarm = ex.alarm || 0, fall = ex.fall || 0;
+    for (let i = 0; i < p.count; i++) p.setZ(i, Math.sin(p.getX(i) * 2.2 + t * 3.2) * 0.22 * (p.getX(i) + 1.6) / 3.2);
+    p.needsUpdate = true;
+    col.material.color.copy(base).lerp(alert, alarm * (0.5 + 0.5 * Math.sin(t * 9)));
+    col.material.opacity = (0.26 + Math.sin(t * 2.4) * 0.03 + alarm * 0.1) * (1 - fall);
+    body.rotation.z = fall * 0.28; body.position.y = -fall * 5; body.scale.y = 1 - fall * 0.35;
+  };
+  g.userData.animate(0);
+  return g;
+}

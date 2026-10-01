@@ -5,6 +5,7 @@ import { rankFor } from './memory.js';
 import { collide } from './rig.js';
 import { PERKS } from './progress.js';
 import { START, WORLD } from '../world/city/bible.js';
+import { kaiju } from './boss.js';
 
 // The minigames and free roam. Each create(ctx) returns a round: where to start, what the
 // narrator says first, and update(dt, mover, hud) which places, checks and scores things.
@@ -58,7 +59,7 @@ function runner(group, world, outfit) {
       if (r.fleeing) {
         const want = Math.atan2(-dx, -dz) + Math.PI + Math.sin(t * 1.7) * 0.5;
         r.heading += Math.atan2(Math.sin(want - r.heading), Math.cos(want - r.heading)) * Math.min(1, dt * 4);
-        r.speed = d > 90 ? 3 : 7.2;
+        r.speed = (d > 90 ? 3 : 7.2) * (r.slow || 1);
         r.pos.x -= Math.sin(r.heading) * r.speed * dt; r.pos.z -= Math.cos(r.heading) * r.speed * dt;
         collide(r.pos, 0.45, world.solids(), 0);
         r.pos.x = THREE.MathUtils.clamp(r.pos.x, WORLD.x[0] + 5, WORLD.x[1] - 5); r.pos.z = THREE.MathUtils.clamp(r.pos.z, WORLD.z[0] + 5, WORLD.z[1] - 5);
@@ -87,7 +88,7 @@ export const MODES = {
       'Grab the glowing memories. The high ones need a jump. Land on a rail to grind it.',
     ],
     controls: 'W push · A/D carve · SPACE ollie · land on rails to grind, A/D to balance',
-    create({ group, rng, controls }) {
+    create({ practice = 1, upgrades = new Set(), group, rng, controls }) {
       const rails = [];
       for (let i = 0; i < 14; i++) {
         const ax = rng.pick(INNER_AVENUES), side = rng() < 0.5 ? -1 : 1, x = ax + side * 13.6;
@@ -125,13 +126,14 @@ export const MODES = {
         spawn: { at: V(0, 0, 60), heading: 0 },
         objective: 'Collect the glowing memories',
         update(dt, m, hud) {
+          if (upgrades.has('big-pop') && !m.M.popped) m.M = { ...m.M, hop: 11.5, popped: true };
           comboT -= dt; if (comboT <= 0 && !grind) combo = 0;
           if (grind && m.velocity.y > 1) { score += 100 * combo; hud.toast(`Hopped off  +${100 * combo}`, 'good'); grind = null; }
           if (!grind && !m.grounded) startGrind(m, hud);
           if (grind) {
             const g = grind, sp = Math.max(Math.abs(m.speed), 9);
             g.time += dt; g.t += g.sign * sp * dt / g.rl.len;
-            g.balance += (Math.sin(g.time * 2.3) * 0.9 + (rng() - 0.5) * 2) * dt * (1 + g.time * 0.25) - controls.axis(['KeyD', 'ArrowRight'], ['KeyA', 'ArrowLeft']) * dt * 2.2;
+            g.balance += (Math.sin(g.time * 2.3) * 0.9 + (rng() - 0.5) * 2) * dt * (1 + g.time * 0.25) * (upgrades.has('grip-tape') ? 0.5 : 1) - controls.axis(['KeyD', 'ArrowRight'], ['KeyA', 'ArrowLeft']) * dt * 2.2;
             const pts = Math.round(160 * dt * combo); score += pts;
             if (Math.abs(g.balance) > 1) {
               hud.toast('Bailed!', 'bad'); combo = 0; grind = null; m.speed *= 0.3; m.velocity.multiplyScalar(0.3); hud.meter(null);
@@ -148,7 +150,7 @@ export const MODES = {
           }
           const body = m.feet.add(V(0, 0.9, 0));
           for (const o of orbs) {
-            if (o.got || !near(body, o.model.position, 1.5)) continue;
+            if (o.got || !near(body, o.model.position, upgrades.has('magnet') ? 2.6 : 1.5)) continue;
             o.got = true; o.model.visible = false; got++;
             combo = Math.min(combo + 1, 5); comboT = 3;
             const pts = (o.high ? 200 : 100) * combo; score += pts;
@@ -162,7 +164,7 @@ export const MODES = {
           hud.set({ score, objective: `Memories ${got}/${orbs.length}` });
         },
         guide: (m) => { let best = null, bd = Infinity; for (const o of orbs) if (!o.got) { const d = o.model.position.distanceToSquared(m.feet); if (d < bd) { bd = d; best = o.model.position; } } return best; },
-        results: () => ({ score, rank: rankFor(score, [6000, 4300, 2800, 1300]), lines: [{ label: 'Memories', value: `${got}/${orbs.length}` }, { label: 'Best air', value: `${bestAir.toFixed(1)} s` }, { label: 'Longest grind', value: `${bestGrind.toFixed(1)} s` }] }),
+        results: () => ({ score: Math.round(score * practice), rank: rankFor(score * practice, [6000, 4300, 2800, 1300]), lines: [{ label: 'Memories', value: `${got}/${orbs.length}` }, { label: 'Best air', value: `${bestAir.toFixed(1)} s` }, { label: 'Longest grind', value: `${bestGrind.toFixed(1)} s` }] }),
       };
     },
   },
@@ -176,7 +178,7 @@ export const MODES = {
       'Hit every gate. Beat the red car. Drift to fill your nitro.',
     ],
     controls: 'W gas · S brake · A/D steer · SPACE drift · SHIFT nitro',
-    create({ group, memory, controls }) {
+    create({ practice = 1, upgrades = new Set(), group, memory, controls }) {
       const loop = [V(0, 0, 100), V(0, 0, -500), V(140, 0, -500), V(140, 0, 140), V(0, 0, 140)];
       const gates = [V(0, 0, -100), V(0, 0, -340), V(70, 0, -500), V(140, 0, -300), V(140, 0, -60), V(70, 0, 140), V(0, 0, 100)];
       // Gates on the avenues span east–west; gates on the cross streets turn a quarter.
@@ -190,7 +192,7 @@ export const MODES = {
       };
       const rivalModel = memory.year === '1900' ? models.makeHorseCarriage() : memory.year === '2100' ? models.makeHoverCar('#ff3d8b') : models.makeRaceCar('#c0392b');
       const rival = place(group, rivalModel, loop[0].clone().add(V(5, 0, 0)));
-      let rivalD = 0, rivalV = 0, next = 0, lap = 1, t = 0, finished = false, won = false, score = 0, nitro = 0.4;
+      let rivalD = 0, rivalV = 0, next = 0, lap = 1, t = 0, finished = false, won = false, score = 0, nitro = upgrades.has('big-tank') ? 1 : 0.4;
       const LAPS = 2;
       const show = () => gateModels.forEach((g, i) => { g.visible = i === next; });
       show();
@@ -200,7 +202,8 @@ export const MODES = {
         guide: () => gates[next],
         update(dt, m, hud) {
           t += dt;
-          if (m.drifting) nitro = Math.min(1, nitro + dt * 0.35);
+          if (upgrades.has('sticky-tyres') && !m.M.sticky) m.M = { ...m.M, grip: m.M.grip * 1.6, turn: m.M.turn * 1.15, sticky: true };
+          if (m.drifting) nitro = Math.min(1, nitro + dt * 0.35 * (upgrades.has('big-tank') ? 2 : 1));
           m.boosting = nitro > 0 && (controls.keys.has('ShiftLeft') || controls.keys.has('ShiftRight'));
           if (m.boosting) nitro = Math.max(0, nitro - dt * 0.45);
           hud.meter('Nitro', nitro);
@@ -227,7 +230,7 @@ export const MODES = {
           const behind = rivalD > (lap - 1) * lapLength + (next ? loopDistTo(gates[next - 1]) : 0);
           hud.set({ score, objective: `Lap ${lap}/${LAPS} · gate ${next + 1}/${gates.length} · ${behind ? 'behind' : 'ahead'} · ${where(m.feet, gates[Math.min(next, gates.length - 1)])}` });
         },
-        results: () => ({ score, rank: rankFor(score, [6500, 5000, 3500, 1500]), subtitle: won ? 'First across the line.' : finished ? 'So close.' : 'Out of time.', lines: [{ label: 'Result', value: finished ? (won ? '1st' : '2nd') : 'DNF' }, { label: 'Time', value: `${t.toFixed(1)} s` }] }),
+        results: () => ({ score: Math.round(score * practice), rank: rankFor(score * practice, [6500, 5000, 3500, 1500]), subtitle: won ? 'First across the line.' : finished ? 'So close.' : 'Out of time.', lines: [{ label: 'Result', value: finished ? (won ? '1st' : '2nd') : 'DNF' }, { label: 'Time', value: `${t.toFixed(1)} s` }] }),
       };
       function loopDistTo(g) {
         let d = 0;
@@ -248,8 +251,8 @@ export const MODES = {
       `The museum in the park. The ${m.year === '1900' ? 'Tsar\'s' : m.year === '2100' ? 'last real' : 'Star of the'} ${m.city === 'tokyo' ? 'Pearl' : 'Diamond'} was on display, right out front.`,
       'Get past the searchlights, grab the jewel, reach the van. Three strikes and you are done.',
     ],
-    controls: 'WASD move · SHIFT sprint · SPACE jump · mouse looks',
-    create({ group, rng }) {
+    controls: 'WASD move · SHIFT sprint · SPACE jump · Q smoke bomb · E taser (if you bought them)',
+    create({ practice = 1, upgrades = new Set(), group, rng, controls }) {
       const [px, pz] = PARK.at, [pw, , pd] = PARK.size;
       const north = pz - pd / 2;
       place(group, models.makeMuseumFacade(), V(px, 0.36, north + 2.5), Math.PI);
@@ -271,14 +274,21 @@ export const MODES = {
         return { model, path: path.map(([x, z]) => V(x, 0.36, z)), leg: 0, wait: i };
       });
       const spawn = V(px, 0.36, pz + pd / 2 - 3);   // just inside the park's south wall, clear of parked cars
-      let t = 0, strikes = 0, carrying = false, escaped = false, score = 0, grace = 0;
+      let t = 0, strikes = 0, carrying = false, escaped = false, score = 0, grace = 0, smoke = 0, smokes = upgrades.has('smoke-bomb') ? 2 : 0, tasers = upgrades.has('taser') ? 3 : 0;
+      const sight = upgrades.has('soft-shoes') ? 0.8 : 1;
       return {
         spawn: { at: spawn, heading: 0 },
         objective: 'Reach the jewel',
         guide: () => (carrying ? vanAt : jewelAt),
         update(dt, m, hud, mover) {
-          t += dt; grace -= dt;
+          t += dt; grace -= dt; smoke -= dt;
           const feet = m.feet;
+          if (smokes && controls.took('KeyQ')) { smokes--; smoke = 4; grace = Math.max(grace, 4); hud.toast(`Smoke bomb! (${smokes} left)`, 'good'); }
+          if (tasers && controls.took('KeyE')) {
+            const g = guards.find((x) => x.model.position.distanceTo(feet) < 4.5 && !(x.stunned > 0));
+            if (g) { tasers--; g.stunned = 8; g.model.rotation.z = Math.PI / 2; g.model.position.y = 0.6; hud.toast(`Zapped! (${tasers} left)`, 'good'); }
+          }
+          hud.meter(smoke > 0 ? 'Unseen' : null, smoke > 0 ? smoke / 4 : 0);
           const caught = () => {
             strikes++; grace = 2;
             hud.toast(strikes >= 3 ? 'Busted.' : `Spotted! Strike ${strikes}/3`, 'bad');
@@ -288,6 +298,7 @@ export const MODES = {
           };
           for (const g of guards) {
             const o = g.model, to = g.path[(g.leg + 1) % g.path.length];
+            if (g.stunned > 0) { g.stunned -= dt; if (g.stunned <= 0) { o.rotation.z = 0; o.position.y = 0.36; } continue; }
             if (g.wait > 0) { g.wait -= dt; o.userData.animate?.(t, 0, {}); o.rotation.y += Math.sin(t * 2) * dt * 0.8; }
             else {
               const dx = to.x - o.position.x, dz = to.z - o.position.z, d = Math.hypot(dx, dz);
@@ -296,13 +307,13 @@ export const MODES = {
               o.userData.animate?.(t, 1.7, {});
             }
             const px2 = feet.x - o.position.x, pz2 = feet.z - o.position.z, d2 = Math.hypot(px2, pz2);
-            if (grace <= 0 && d2 < 9 && d2 > 0.1 && (-Math.sin(o.rotation.y) * px2 - Math.cos(o.rotation.y) * pz2) / d2 > Math.cos(0.42)) { if (caught()) return; }
+            if (grace <= 0 && d2 < 9 * sight && d2 > 0.1 && (-Math.sin(o.rotation.y) * px2 - Math.cos(o.rotation.y) * pz2) / d2 > Math.cos(0.42 * sight)) { if (caught()) return; }
             else if (grace <= 0 && d2 < 1.6) { if (caught()) return; }
           }
           for (const l of lights) {
             const a = l.base + Math.sin(t * l.speed) * l.sweep;
             l.model.rotation.y = a;
-            const reach = l.model.userData.reach ?? 14, radius = l.model.userData.radius ?? 5;
+            const reach = (l.model.userData.reach ?? 14) * sight, radius = (l.model.userData.radius ?? 5) * sight;
             const dx = feet.x - l.model.position.x, dz = feet.z - l.model.position.z, d = Math.hypot(dx, dz);
             if (grace > 0 || d > reach || d < 1) continue;
             const along = (-Math.sin(a) * dx - Math.cos(a) * dz) / d;
@@ -315,7 +326,7 @@ export const MODES = {
           }
           hud.set({ score, objective: `${carrying ? 'Get to the van' : 'Reach the jewel'} · ${where(feet, carrying ? vanAt : jewelAt)} · strikes ${strikes}/3` });
         },
-        results: () => ({ score, rank: escaped ? rankFor(score, [5000, 4200, 3500, 0]) : 'D', subtitle: escaped ? 'They never saw your face.' : strikes >= 3 ? 'Caught in the light.' : 'The alarm beat you.', lines: [{ label: 'Jewel', value: carrying ? 'Taken' : 'Still there' }, { label: 'Strikes', value: `${strikes}/3` }] }),
+        results: () => ({ score: Math.round(score * practice), rank: escaped ? rankFor(score * practice, [5000, 4200, 3500, 0]) : 'D', subtitle: escaped ? 'They never saw your face.' : strikes >= 3 ? 'Caught in the light.' : 'The alarm beat you.', lines: [{ label: 'Jewel', value: carrying ? 'Taken' : 'Still there' }, { label: 'Strikes', value: `${strikes}/3` }] }),
       };
     },
   },
@@ -328,7 +339,7 @@ export const MODES = {
       'Ram the saucers out of the sky before their beams take the city apart.',
     ],
     controls: 'WASD fly · SPACE up · C down · SHIFT boost · mouse steers',
-    create({ group, rng, life }) {
+    create({ practice = 1, upgrades = new Set(), group, rng, life }) {
       const ufos = [];
       let score = 0, downed = 0, lost = 0, combo = 0, comboT = 0, wave = 0;
       const spawnWave = () => {
@@ -350,6 +361,7 @@ export const MODES = {
           return best;
         },
         update(dt, m, hud) {
+          if (upgrades.has('jet-boots') && !m.M.jets) m.M = { ...m.M, boost: 82, jets: true };
           t += dt; comboT -= dt; if (comboT <= 0) combo = 0;
           const body = m.feet.add(V(0, 1, 0));
           for (const u of ufos) {
@@ -373,11 +385,11 @@ export const MODES = {
               const pr = u.prey;
               if (on) {
                 pr.position.x += (o.position.x - pr.position.x) * Math.min(1, dt * 0.8); pr.position.z += (o.position.z - pr.position.z) * Math.min(1, dt * 0.8);
-                pr.position.y += dt * 7; pr.rotation.y += dt * 1.5; pr.rotation.z = Math.sin(t * 2) * 0.3;
+                pr.position.y += dt * (upgrades.has('jammer') ? 3.5 : 7); pr.rotation.y += dt * 1.5; pr.rotation.z = Math.sin(t * 2) * 0.3;
                 if (pr.position.y > o.position.y - 3) { pr.visible = false; u.prey = null; lost++; score = Math.max(0, score - 150); hud.toast('Gone. Into the saucer.', 'bad'); }
               } else { pr.position.y = Math.max(0, pr.position.y - dt * 20); if (pr.position.y === 0) u.prey = null; }
             } else if (on && !life && (u.beam % 14) > 13.9) { lost++; score = Math.max(0, score - 100); hud.toast('They took a water tower!', 'bad'); u.beam += 0.2; }
-            if (near(body, o.position, 6)) {
+            if (near(body, o.position, upgrades.has('big-fists') ? 8.5 : 6)) {
               if (u.prey) { u.prey.rotation.z = 0; const dropped = u.prey; u.prey = null; dropped.userData.falling = true; score += 200; hud.toast('Saved it!  +200', 'good'); }
               u.down = true; u.vy = 4; downed++;
               combo = Math.min(combo + 1, 6); comboT = 4;
@@ -390,7 +402,7 @@ export const MODES = {
           if (ufos.every((u) => u.down)) { hud.toast(`Wave ${wave} cleared!`, 'good'); spawnWave(); }
           hud.set({ score, objective: `Wave ${wave} · ${ufos.filter((u) => !u.down).length} saucers left` });
         },
-        results: () => ({ score, rank: rankFor(score, [6000, 4200, 2600, 1200]), subtitle: downed > 20 ? 'The city never knew how close it came.' : 'They will be back.', lines: [{ label: 'Saucers down', value: String(downed) }, { label: 'Things abducted', value: String(lost) }] }),
+        results: () => ({ score: Math.round(score * practice), rank: rankFor(score * practice, [6000, 4200, 2600, 1200]), subtitle: downed > 20 ? 'The city never knew how close it came.' : 'They will be back.', lines: [{ label: 'Saucers down', value: String(downed) }, { label: 'Things abducted', value: String(lost) }] }),
       };
     },
   },
@@ -403,7 +415,7 @@ export const MODES = {
       'Crimes pop up across the city. Swing down and tackle the crook before they get away. They run.',
     ],
     controls: 'HOLD MOUSE or SHIFT web · SPACE jump / wall kick · WASD steer · mouse aims',
-    create({ group, rng, world, town, earn, scale, name }) {
+    create({ practice = 1, upgrades = new Set(), group, rng, world, town, earn, scale, name }) {
       const crook = runner(group, world, { shirt: '#e0322b', pants: '#1b1a17', hat: 'mask' });
       let t = 0, victim = null, stolen = 0;
       const CRIMES = ['A purse snatching', 'A hot dog cart robbery', 'A car break-in', 'Someone stealing a bicycle', 'A pickpocket on the corner', 'Someone jaywalking. Menacingly.', 'A stolen pigeon', 'A mugging outside the deli'];
@@ -414,7 +426,7 @@ export const MODES = {
       const next = (from) => {
         const pool = spots.filter((s) => { const d = flatDist(s, from); return d > 120 && d < 380; });
         const at = rng.pick(pool.length ? pool : spots).clone().add(V(rng.range(-8, 8), 0, rng.range(-3, 3)));
-        crime = { at, what: rng.pick(CRIMES) }; left = 40;
+        crime = { at, what: rng.pick(CRIMES) }; left = 40 + (upgrades.has('police-radio') ? 12 : 0);
         crook.reset(at);
         // Someone out on the street nearby is the one who gets robbed.
         const near = town?.outdoors({ x: at.x, z: at.z }, 160) || [];
@@ -430,6 +442,7 @@ export const MODES = {
           t += dt;
           if (!crime) { next(m.feet); hud.toast(`${crime.what}!`, 'bad'); }
           left -= dt;
+          crook.slow = upgrades.has('sneakers') ? 0.8 : 1;
           crook.update(dt, t, m.feet);
           marker.position.set(crook.pos.x, 0.2, crook.pos.z); beam.position.set(crook.pos.x, 0, crook.pos.z);
           if (flatDist(m.feet, crook.pos) < 3 && m.feet.y < 4) {
@@ -444,7 +457,7 @@ export const MODES = {
           }
           hud.set({ score, objective: `${crime.what} · ${crook.fleeing ? 'they\'re running · ' : ''}${where(m.feet, crook.pos)} · ${Math.ceil(left)} s` });
         },
-        results: () => ({ score, rank: rankFor(score, [3800, 2600, 1500, 600]), subtitle: stopped >= 5 ? 'The city slept a little easier.' : 'Tomorrow night, then.', lines: [{ label: 'Crimes stopped', value: String(stopped) }, { label: 'Got away', value: String(missed) }] }),
+        results: () => ({ score: Math.round(score * practice), rank: rankFor(score * practice, [3800, 2600, 1500, 600]), subtitle: stopped >= 5 ? 'The city slept a little easier.' : 'Tomorrow night, then.', lines: [{ label: 'Crimes stopped', value: String(stopped) }, { label: 'Got away', value: String(missed) }] }),
       };
     },
   },
@@ -457,8 +470,9 @@ export const MODES = {
       'Deliver to the glowing doors. Faster means bigger tips.',
     ],
     controls: 'W gas · S brake · A/D steer · mouse looks',
-    create({ group, rng, world, town, earn, scale }) {
-      const briefs = world.city.city.briefs;
+    create({ practice = 1, upgrades = new Set(), group, rng, world, town, earn, scale, controls }) {
+      const briefs = world.city.city.briefs, window_ = upgrades.has('thermal-bag') ? 60 : 40;
+      let nitro = 1;
       const shop = doorPoint(rng, briefs, V(0, 0, 60), [0, 80]);
       let customer = null;
       const door = place(group, models.makeDoorMarker(), V(0, 0, 0));
@@ -480,7 +494,7 @@ export const MODES = {
         update(dt, m, hud) {
           since += dt;
           if (flatDist(m.feet, target.at) < 5) {
-            const tip = Math.max(0, Math.round((40 - since) * 12)); tips += tip;
+            const tip = Math.max(0, Math.round((window_ - since) * 12 * 40 / window_)); tips += tip;
             score += 300 + tip; delivered++;
             if (customer) {
               const price = 12 * scale, dollars = Math.min(customer.money, price + price * (tip / 480) * (0.5 + customer.traits.kind));
@@ -491,10 +505,15 @@ export const MODES = {
             if (delivered === TOTAL) { this.done = true; score += Math.round((this.timeLeft ?? 0) * 20); return; }
             next(m.feet);
           }
-          hud.meter('Tip', Math.max(0, (40 - since) / 40));
+          if (!m.M.tuned) m.M = { ...m.M, hop: upgrades.has('hop') ? 8.5 : m.M.hop, tuned: true };
+          if (upgrades.has('nitrous')) {
+            m.boosting = nitro > 0 && (controls.keys.has('ShiftLeft') || controls.keys.has('ShiftRight'));
+            nitro = m.boosting ? Math.max(0, nitro - dt * 0.35) : Math.min(1, nitro + dt * 0.08);
+          }
+          hud.meter(upgrades.has('nitrous') && m.boosting ? 'Nitrous' : 'Tip', upgrades.has('nitrous') && m.boosting ? nitro : Math.max(0, (window_ - since) / window_));
           hud.set({ score, objective: `Pizza ${delivered + 1}/${TOTAL}${customer ? ` for ${customer.first}` : ''} · ${where(m.feet, target.at)}` });
         },
-        results: () => ({ score, rank: rankFor(score, [5200, 4000, 2800, 1400]), subtitle: delivered === TOTAL ? 'Every pie, still warm.' : 'Some of them got it free.', lines: [{ label: 'Delivered', value: `${delivered}/${TOTAL}` }, { label: 'Tips', value: `$${(tips / 100).toFixed(2)}` }] }),
+        results: () => ({ score: Math.round(score * practice), rank: rankFor(score * practice, [5200, 4000, 2800, 1400]), subtitle: delivered === TOTAL ? 'Every pie, still warm.' : 'Some of them got it free.', lines: [{ label: 'Delivered', value: `${delivered}/${TOTAL}` }, { label: 'Tips', value: `$${(tips / 100).toFixed(2)}` }] }),
       };
     },
   },
@@ -508,7 +527,7 @@ export const MODES = {
       'Pick up the people waving, get them there fast. Every fare buys you more time. Near misses pay.',
     ],
     controls: 'W gas · S brake · A/D steer · SPACE drift · SHIFT boost · stop next to a fare to pick up',
-    create({ group, rng, world, life, town, controls, earn, scale, name }) {
+    create({ practice = 1, upgrades = new Set(), group, rng, world, life, town, controls, earn, scale, name }) {
       const briefs = world.city.city.briefs;
       const flag = place(group, beacon('#ffd66b'), V(0, -999, 0));
       const door = place(group, models.makeDoorMarker(), V(0, -999, 0));
@@ -529,13 +548,13 @@ export const MODES = {
         guide: () => (rider ? dest.at : fare?.at),
         update(dt, m, hud) {
           if (!fare && !rider) findFare(m.feet);
-          if (m.drifting) nitro = Math.min(1, nitro + dt * 0.3);
+          if (m.drifting) nitro = Math.min(1, nitro + dt * 0.3 * (upgrades.has('turbo') ? 2 : 1));
           m.boosting = nitro > 0 && (controls.keys.has('ShiftLeft') || controls.keys.has('ShiftRight'));
           if (m.boosting) nitro = Math.max(0, nitro - dt * 0.4);
           if (fare && !rider) {
             flag.position.set(fare.at.x, 0, fare.at.z);
             fare.model?.userData.animate?.(this.t = (this.t || 0) + dt, 0, { wave: true });
-            if (flatDist(m.feet, fare.at) < 7 && Math.abs(m.speed) < 6) {
+            if (flatDist(m.feet, fare.at) < (upgrades.has('quick-stop') ? 10 : 7) && Math.abs(m.speed) < (upgrades.has('quick-stop') ? 14 : 6)) {
               if (fare.ped) life.board(fare.ped); else fare.model.visible = false;
               rider = fare; fare = null;
               // A resident goes where they were already headed; anyone else picks a door.
@@ -557,12 +576,12 @@ export const MODES = {
               const d = flatDist(v.position, m.feet);
               if (d < 3.6 && d > 1.9) { seen.add(v.id); misses++; score += 40; hud.toast('Near miss  +40', 'good'); setTimeout(() => seen.delete(v.id), 3000); }
             }
-            if (flatDist(m.feet, dest.at) < 8 && Math.abs(m.speed) < 7) {
-              const bonus = Math.max(0, Math.round(fareLeft * 25)), pay = 300 + bonus;
+            if (flatDist(m.feet, dest.at) < (upgrades.has('quick-stop') ? 11 : 8) && Math.abs(m.speed) < (upgrades.has('quick-stop') ? 15 : 7)) {
+              const bonus = Math.max(0, Math.round(fareLeft * 25 * (upgrades.has('charm') ? 1.3 : 1))), pay = 300 + bonus;
               score += pay; fares++;
               // The fare comes out of their own pocket; the tip depends on the ride and on them.
               const R = rider.resident, meter = Math.round((3 + flatDist(rider.at, dest.at) / 80) * scale * 100) / 100;
-              const tip = R ? Math.round(meter * (fareLeft > 0 ? 0.1 + R.traits.kind * 0.25 + Math.max(0, R.opinion) * 0.2 : 0) * 100) / 100 : 0;
+              const tip = R ? Math.round(meter * (fareLeft > 0 ? 0.1 + R.traits.kind * 0.25 + Math.max(0, R.opinion) * 0.2 : 0) * (upgrades.has('charm') ? 1.5 : 1) * 100) / 100 : 0;
               const paid = R ? Math.min(R.money, meter + tip) : meter;
               if (R) { town.pay(R, -paid, `Took a cab with ${name}${fareLeft > 0 ? ', fast' : ', slow'}`); R.opinion = Math.max(-1, Math.min(1, R.opinion + (fareLeft > 0 ? 0.12 : -0.08))); R.met = true; }
               cash += paid; earn?.(paid);
@@ -575,7 +594,7 @@ export const MODES = {
           } else hud.meter('Nitro', nitro);
           hud.set({ score, objective: rider ? `Drop off · ${where(m.feet, dest.at)} · ${Math.max(0, Math.ceil(fareLeft))} s` : fare ? `Pick up the fare · ${where(m.feet, fare.at)}` : 'Find a fare' });
         },
-        results: () => ({ score, rank: rankFor(score, [4500, 3200, 2000, 900]), subtitle: fares >= 6 ? 'Best cabbie in the city.' : 'The meter was running.', lines: [{ label: 'Fares', value: String(fares) }, { label: 'Near misses', value: String(misses) }, { label: 'Cash', value: `$${cash.toFixed(2)}` }] }),
+        results: () => ({ score: Math.round(score * practice), rank: rankFor(score * practice, [4500, 3200, 2000, 900]), subtitle: fares >= 6 ? 'Best cabbie in the city.' : 'The meter was running.', lines: [{ label: 'Fares', value: String(fares) }, { label: 'Near misses', value: String(misses) }, { label: 'Cash', value: `$${cash.toFixed(2)}` }] }),
       };
     },
   },
@@ -589,7 +608,7 @@ export const MODES = {
       'Little memories are lying around the city. Pick them up. Press M when you want to wake up.',
     ],
     controls: 'WASD move · number keys switch powers · E use · M wake up',
-    create({ group, rng, life, town, controls, progress, switchTo, talkTo, found, clock, cash, earn, scale }) {
+    create({ practice = 1, upgrades = new Set(), group, rng, life, town, controls, progress, switchTo, talkTo, found, clock, cash, earn, scale, inspectPlace }) {
       const kept = progress.kept.filter((g) => PERKS[g]);
       const rides = kept.filter((g) => PERKS[g].mover);
       const money = kept.includes('heist');
@@ -619,8 +638,12 @@ export const MODES = {
           const farRes = far?.residentId ? town?.person(far.residentId) : null;
           const price = Math.round(600 * scale), have = cash();
           hud.prompt(ped ? `E · TALK TO ${resident?.met ? resident.first.toUpperCase() : resident ? 'THEM' : 'THE STRANGER'}` : v ? `E · BUY THIS ${v.kind === 'carriage' ? 'CARRIAGE' : v.kind.toUpperCase()}  (${money ? '$∞' : `$${price.toLocaleString()}`})` : farRes ? `${farRes.met ? farRes.first.toUpperCase() : 'SOMEONE WHO LIVES HERE'} · ${Math.round(far.position.distanceTo(m.feet))} M · WALK UP TO TALK` : null);
+          // Front doors: walk up to a building to see its deed (and buy it).
+          const door = !ped && !v && town && active === 'foot' ? town.places.find((p) => p.kind !== 'park' && p.kind !== 'office' && Math.hypot(p.door.x - m.feet.x, p.door.z - m.feet.z) < 3) : null;
+          if (door) hud.prompt(`E · ${town.ownerOf(door.id) === 'player' ? 'YOUR BUILDING' : 'LOOK AT THIS BUILDING'}`);
           if (ped && controls.took('KeyE')) { hud.prompt(null); talkTo(resident, ped); return; }
-          if (!ped && !v && controls.took('KeyE')) hud.toast('Nobody close enough. Walk right up to someone, then press E.');
+          if (door && controls.took('KeyE')) { hud.prompt(null); inspectPlace(door); return; }
+          if (!ped && !v && !door && controls.took('KeyE')) hud.toast('Nobody close enough. Walk right up to someone (or a front door), then press E.');
           if (v && controls.took('KeyE')) {
             if (!money && have < price) hud.toast(`It's $${price.toLocaleString()}. You have $${have.toFixed(2)}. Drive a cab, or keep the jewel.`, 'bad');
             else {
@@ -632,6 +655,19 @@ export const MODES = {
       };
     },
   },
+
+  // The pizzeria's kitchen: a counter game drawn by ui.kitchen(), not a round in the street.
+  // main.js runs it; this entry carries the words and the rank lines.
+  shop: {
+    kitchen: true, time: 90, title: 'Pizza shop',
+    intro: (m) => [
+      m.year === '1900' ? 'A wood oven, flour to your elbows, and a queue out the door onto the cobbles.' : m.year === '2100' ? 'The printers broke, so the owner made everyone cook by hand. People queued round the block for it.' : 'Behind the counter at last. The lunch rush was about to hit.',
+      'Dough, sauce, cheese, toppings, then pull it out of the oven when it\'s golden. Don\'t keep anyone waiting.',
+    ],
+    ranks: [5500, 4200, 3000, 1800],
+  },
+
+  kaiju,
 };
 
 export { animated, INNER_STREETS };

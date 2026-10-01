@@ -18,13 +18,15 @@ import { DEFAULT_LOOK, lookFor } from './looks.js';
 const ROT = { north: 0, east: 1, south: 2, west: 3 };
 const TRIM_SINK = 0.05, ROOF_LIFT = 0.02;
 
-export function buildCity({ seed = WORLD.seed, briefs = lots(seed), fillFor = () => null, look = DEFAULT_LOOK, lit: litScale = 1 } = {}) {
+//   destroyed  lot ids knocked down (Remind Me's kaiju): a low heap of rubble, no tiers, no parts
+export function buildCity({ seed = WORLD.seed, briefs = lots(seed), fillFor = () => null, look = DEFAULT_LOOK, lit: litScale = 1, destroyed = null } = {}) {
   const boxes = {}; const push = (m, ...r) => (boxes[m] ||= []).push(r);
   const parts = [], buildings = [], anchors = [], fills = {}, built = {};
   const byRow = groupRows(briefs);
   const L = lookFor(look);
 
   for (const brief of briefs) {
+    if (destroyed?.has(brief.id)) { rubble(brief, push, buildings); continue; }
     // A stored row is used only if it still validates against today's bible; otherwise
     // the zoning default stands in, per field.
     const row = fillFor(brief) || {};
@@ -149,6 +151,17 @@ function neonSigns(face, length, wallH, rng, signs, wallPoint, push) {
   if (rng() < signs.stripChance) {
     const p = wallPoint(face, 0.3), w = length * (0.5 + rng() * 0.35);
     push(colour(), p.x, 3.8, p.z, alongX ? w : 0.15, 0.35, alongX ? 0.15 : w);
+  }
+}
+
+// A knocked-down building: a few broken slabs at different heights, still something to land on.
+function rubble(brief, push, buildings) {
+  const rng = createRng(hashId(brief.id + '/rubble'));
+  for (let i = 0; i < 6; i++) {
+    const w = brief.w * (0.25 + rng() * 0.35), d = brief.d * (0.25 + rng() * 0.35), h = 0.8 + rng() * 3.5;
+    const x = brief.x + (rng() - 0.5) * (brief.w - w), z = brief.z + (rng() - 0.5) * (brief.d - d);
+    push(rng() < 0.5 ? 'stone' : 'trim', x, h / 2, z, w, h, d);
+    buildings.push({ minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2, height: h, lot: brief.id, tier: 0 });
   }
 }
 

@@ -11,6 +11,13 @@ export const TIME_CHOICES = ['dawn', 'noon', 'dusk', 'midnight'].map((id) => ({ 
 export const weatherChoices = (season) => SEASONS[season].weathers.map(([id, label]) => ({ id, label }));
 
 export const LINES = {
+  // Said right after the time of day: how long the day runs before the narrator makes you rest.
+  dayLength: {
+    dawn: 'That gives you the whole day. You can keep going until midnight — then you\'ll have to rest, and we\'ll go over it together.',
+    noon: 'Half the day\'s already gone. You\'ve got until midnight, then you rest and we talk it over.',
+    dusk: 'Not much of the day left. Midnight comes fast — that\'s when you rest and we go over it.',
+    midnight: 'Late, then. You\'ve got the rest of tonight and all of tomorrow before you have to rest — midnight after next.',
+  },
   city: {
     nyc: "That's right. The grid, the steam coming up off the street, the water towers on every roof.",
     tokyo: "That's right. The trains, the crossings, the signs stacked all the way up the walls.",
@@ -61,6 +68,8 @@ export const ACTIVITIES = [
   { id: 'patrol', glyph: 'patrol', colour: '#2b62a6', label: 'Street patrol', hint: 'I was patrolling the streets, fighting crime.' },
   { id: 'pizza', glyph: 'pizza', colour: '#d9621f', label: 'Pizza run', hint: 'I was delivering pizzas.' },
   { id: 'taxi', glyph: 'taxi', colour: '#f6b90c', label: 'Cab driver', hint: 'I was driving a cab, and everyone was late.' },
+  { id: 'shop', glyph: 'shop', colour: '#c8553d', label: 'Pizza shop', hint: 'I was working the counter at the pizzeria.' },
+  { id: 'kaiju', glyph: 'kaiju', colour: '#4a5d3a', label: 'The monster', hint: 'Something enormous came out of the river.' },
   { id: 'roam', glyph: 'roam', colour: '#6b5b95', label: 'Just wander', hint: 'Nothing much. I was just walking around.' },
 ];
 export const ERA_LABEL = Object.fromEntries(Object.entries(ERAS).map(([k, v]) => [k, v.label]));

@@ -38,6 +38,22 @@ const board8 = (total) => [
   { id: 'roam', glyph: 'roam', colour: '#6b5b95', label: 'Just wander', hint: 'I was just walking around.', badge: 'KEPT: FLIGHT' },
 ].map((o) => (o.locked ? { ...o, afford: total >= o.cost } : o));
 
+// Twelve cards as a path: tiers run left to right, lines join a card to what it unlocks, and the last tier is an either/or.
+const board12 = (total) => [
+  { id: 'skate', glyph: 'skate', label: 'Skateboarding', hint: 'I was skateboarding through the city.', tier: 0, state: 'done', rank: 'A', leadsTo: ['race', 'pizza', 'taxi'] },
+  { id: 'race', glyph: 'race', label: 'Street race', hint: 'I was driving in a car race.', tier: 1, state: 'done', rank: 'B', leadsTo: ['heist'] },
+  { id: 'pizza', glyph: 'pizza', label: 'Pizza run', hint: 'I was delivering pizzas.', tier: 1, state: 'open', leadsTo: ['shop'] },
+  { id: 'taxi', glyph: 'taxi', label: 'Cab driver', hint: 'I was driving a cab, fast.', tier: 1, state: 'buy', cost: 500, leadsTo: ['aliens'] },
+  { id: 'heist', glyph: 'heist', label: 'The heist', hint: 'I was breaking into a museum to steal a jewel.', tier: 2, state: 'buy', cost: 1000, leadsTo: ['patrol', 'owner'] },
+  { id: 'shop', glyph: 'shop', label: 'Pizza shop', hint: 'I was running the oven on a Friday night.', tier: 2, state: 'locked', requirement: 'Get an A in Pizza run', leadsTo: ['mayor'] },
+  { id: 'aliens', glyph: 'aliens', label: 'Alien invasion', hint: 'I was defending the city from aliens.', tier: 2, state: 'buy', cost: 1500, leadsTo: ['patrol'] },
+  { id: 'patrol', glyph: 'patrol', label: 'Street patrol', hint: 'I was patrolling the streets.', tier: 3, state: 'locked', requirement: 'Win the Street race', leadsTo: ['kaiju', 'hero'] },
+  { id: 'mayor', glyph: 'mayor', label: 'Become Mayor', hint: 'I was running for office.', tier: 3, state: 'locked', requirement: 'Own three buildings', leadsTo: [] },
+  { id: 'owner', glyph: 'owner', label: 'Own the city', hint: 'I owned half of Main Street.', tier: 3, state: 'locked', requirement: 'Earn $5,000 in tips', leadsTo: [] },
+  { id: 'kaiju', glyph: 'kaiju', label: 'Kaiju rampage', hint: 'I was the monster.', tier: 4, state: 'forked', cost: 1200, fork: 'VILLAIN OR HERO', leadsTo: [] },
+  { id: 'hero', glyph: 'hero', label: 'Earth’s mightiest', hint: 'I was saving everyone.', tier: 4, state: 'buy', cost: 1200, fork: 'VILLAIN OR HERO', leadsTo: [] },
+].map((o) => (o.cost != null ? { ...o, afford: o.state !== 'locked' && total >= o.cost } : o));
+
 const ABILITIES = [
   { id: 'foot', label: 'On foot' },
   { id: 'skate', label: 'Skateboard' },
@@ -141,6 +157,113 @@ const scenes = {
     log('board8 →', id);
     ui.hideDialogue();
     return id;
+  },
+  async board12() {
+    if (mem) ui.memories(mem);
+    const id = await ui.ask('Remind me — which road were you on?', board12(mem), { style: 'board' });
+    log('board12 →', id);
+    ui.hideDialogue();
+    return id;
+  },
+  async ledger() {
+    await ui.ledger({
+      kicker: 'The city sleeps',
+      title: 'Day 3 is over',
+      rows: [
+        { label: 'Fares and tips', value: '+$214.50', tone: 'good' },
+        { label: 'Rent collected, four flats', value: '+$320.00', tone: 'good' },
+        { label: 'Oven repairs', value: '−$45.00', tone: 'bad' },
+        { label: 'Approval', value: '62% (+3)', tone: 'good' },
+        { label: 'Become Mayor', progress: 0.4, value: '2 of 5 buildings' },
+        { label: 'Own the city', progress: 0.1, value: '$1,240 of $12,000' },
+        { label: 'In the till tonight', value: '$1,729.50', total: true },
+      ],
+      note: 'Rosa asked after you. The bakery smells like Tuesday.',
+    });
+    log('ledger resolved');
+  },
+  async decision() {
+    const rent = params.get('kind') === 'rent';
+    const id = await ui.decision(rent ? {
+      kicker: 'Landlord · Day 3',
+      title: 'Dmitri can’t pay',
+      situation: 'Dmitri Okonkwo-Reyes is eleven days behind on the room on Mott. He says the docks cut his shifts. His rent is $42.',
+      options: [
+        { id: 'evict', label: 'Evict him', effects: [{ text: 'Room free to let', tone: 'good' }, { text: 'Neighbours wary', tone: 'bad' }, { text: 'Opinion −0.6', tone: 'bad' }] },
+        { id: 'wait', label: 'Give him a week', effects: [{ text: 'Rent: $0 this week', tone: 'bad' }, { text: 'Opinion +0.2', tone: 'good' }] },
+      ],
+    } : {
+      kicker: 'Mayor’s desk · Day 3',
+      title: 'The bridge toll',
+      situation: 'The council wants to raise the bridge toll to pay for the new library. Half the city crosses it every morning.',
+      options: [
+        { id: 'raise', label: 'Raise the toll', effects: [{ text: '+$2,400 a day', tone: 'good' }, { text: 'Approval −8', tone: 'bad' }] },
+        { id: 'hold', label: 'Hold the line', effects: [{ text: 'Library waits a year' }, { text: 'Approval +2', tone: 'good' }] },
+        { id: 'tax', label: 'Tax the big flats', effects: [{ text: 'Landlords furious', tone: 'bad' }, { text: '+$900 a day', tone: 'good' }, { text: 'Approval +1', tone: 'good' }] },
+      ],
+    });
+    log('decision →', id);
+  },
+  async election() {
+    const lose = params.has('lose');
+    await ui.election({
+      title: 'Mayor of Lower Manhattan',
+      candidates: [
+        { name: 'Rosa Flanagan', votes: 4120 },
+        { name: 'Kid', votes: lose ? 3380 : 5230, you: true },
+        { name: 'Marco Rivera', votes: lose ? 5960 : 2890 },
+        { name: 'Dmitri Okonkwo-Reyes', votes: 1210 },
+      ],
+      total: lose ? 14670 : 13450,
+      turnout: 0.63,
+    });
+    log('election resolved');
+  },
+  async shop() {
+    let cashNow = Number(params.get('cash') ?? 140);
+    const owned = new Set();
+    const ITEMS = [
+      { id: 'stone-oven', label: 'Stone oven', text: 'A wider golden zone. Forgiving on busy nights.', price: 120, glyph: 'shop' },
+      { id: 'prep-cook', label: 'Prep cook', text: 'Sauce and cheese go on by themselves.', price: 90, glyph: 'foot' },
+      { id: 'loyal-customers', label: 'Loyal customers', text: 'Regulars wait longer before they walk out.', price: 200, glyph: 'mayor' },
+      { id: 'scooter', label: 'Delivery scooter', text: 'Faster pizza runs across town.', price: 340, glyph: 'pizza' },
+    ];
+    for (;;) {
+      const id = await ui.shop({ title: 'Before you head out…', cash: cashNow, items: ITEMS.map((i) => ({ ...i, owned: owned.has(i.id), afford: cashNow >= i.price })) });
+      log('shop →', id);
+      if (!id) break;
+      owned.add(id);
+      cashNow -= ITEMS.find((i) => i.id === id).price;
+    }
+  },
+  async property() {
+    const kind = params.get('kind') || 'owned';
+    const base = { address: '412 Mott Street', kind: 'Walk-up apartments · 4 flats', price: 184000, income: 168 };
+    const tenants = [
+      { name: 'Dmitri Okonkwo-Reyes', rent: 42, paying: false },
+      { name: 'Keisha Johnson', rent: 48, paying: true },
+      { name: 'Luis Rivera', rent: 40, paying: true },
+      { name: 'Priya Park', rent: 38, paying: true },
+    ];
+    const data = {
+      sale: { ...base, owner: '', tenants, income: null, options: [{ id: 'buy', label: 'Buy it', hint: '$184,000' }, { id: 'view', label: 'Look around' }] },
+      broke: { ...base, owner: '', tenants: [], kind: 'Corner bakery', address: '90 Bleecker', price: 520000, income: 340, options: [{ id: 'buy', label: 'Buy it', hint: 'Need $482,000 more', disabled: true }, { id: 'view', label: 'Look around' }] },
+      theirs: { ...base, owner: 'Rosa Flanagan', tenants, options: [{ id: 'view', label: 'Look around' }] },
+      owned: { ...base, owner: 'You', tenants, options: [{ id: 'collect', label: 'Collect rent', hint: '$128 waiting' }, { id: 'view', label: 'View tenants' }, { id: 'sell', label: 'Sell', hint: '$184,000' }] },
+    }[kind];
+    const id = await ui.property(data);
+    log('property →', id);
+  },
+  async kitchen() {
+    const NAMES = ['Rosa Flanagan', 'Marco Rivera', 'Dmitri Okonkwo-Reyes', 'Keisha Johnson', 'Luis Rivera', 'Priya Park', 'Sal Moretti', 'Grace Chen', 'Tony Alvarez', 'Mei Tanaka', 'Eddie Brooks', 'Fatima Haddad', 'Rob Kowalski', 'Yolanda King', 'Kevin Doyle', 'Ana Silva', 'Danny Cruz', 'Jen Park', 'Mike Bell', 'Sofia Rossi'];
+    const T = [[], ['pepperoni'], ['mushroom', 'olive'], ['pepperoni', 'basil'], ['olive'], ['pepperoni', 'mushroom', 'pepper'], ['basil', 'pepper'], ['mushroom']];
+    const orders = NAMES.map((name, i) => ({ name, topping: T[(i * 5 + 1) % T.length] }));
+    const upgrades = (params.get('ups') || '').split(',').filter(Boolean);
+    const res = await ui.kitchen({ title: 'Pizza shop rush', duration: Number(params.get('dur')) || 90, orders, upgrades });
+    window.__kitchen = res;
+    log('kitchen →', JSON.stringify(res));
+    ui.hideDialogue();
+    await ui.results({ title: 'Pizza shop rush', subtitle: `${res.served} pizzas out the door.`, score: res.score, rank: res.score >= 5500 ? 'S' : res.score >= 4200 ? 'A' : res.score >= 3000 ? 'B' : 'C', lines: res.lines, actions: [{ id: 'again', label: 'Another shift' }] });
   },
   async memories() {
     ui.memories(1200);

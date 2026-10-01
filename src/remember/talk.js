@@ -92,4 +92,4 @@ export function answer(r, id, town, player, scale) {
 
 export function money(v) { return `$${v >= 100 ? Math.round(v).toLocaleString() : v.toFixed(2)}`; }
 const ord = (n) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th'}`;
-function where(door) { return `${ord(Math.round(door.x / 140) + 3)} Ave & ${ord(Math.max(1, Math.round((220 - door.z) / 80)))} St`; }
+export function where(door) { return `${ord(Math.round(door.x / 140) + 3)} Ave & ${ord(Math.max(1, Math.round((220 - door.z) / 80)))} St`; }
