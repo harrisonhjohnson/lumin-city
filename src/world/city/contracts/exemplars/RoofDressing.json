@@ -1,0 +1,5 @@
+[
+  { "lot": "b0-0-N0", "parts": [{ "part": "roofTank", "x": -4, "z": -8, "rot": 0 }, { "part": "hvacBox", "x": 4, "z": 6, "rot": 1 }] },
+  { "lot": "b2-6-N0", "parts": [{ "part": "waterTower", "x": -8, "z": -4, "rot": 0 }, { "part": "stairBulkhead", "x": 6, "z": 5, "rot": 0 }, { "part": "antenna", "x": 12, "z": -6, "rot": 0 }] },
+  { "lot": "b1-6-S0", "parts": [] }
+]

@@ -1,0 +1,5 @@
+[
+  { "landmark": "spire", "text": "Find the tallest roof on the avenue, the one with a needle on top. Look at what stands beside it.", "where": "apartment" },
+  { "landmark": "park", "text": "There is one block with no buildings at all. Stand on the roof that faces it from the west.", "where": "site" },
+  { "landmark": "bridge", "text": "Go to the water. The stone tower by the river is the last thing before you leave the city.", "where": "city" }
+]

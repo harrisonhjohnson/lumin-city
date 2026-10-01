@@ -1,0 +1,5 @@
+[
+  { "lot": "b0-0-N0", "walls": { "north": { "fireEscape": true, "storefront": true, "awning": true, "scaffolding": false, "cornice": true } } },
+  { "lot": "b2-6-N0", "walls": { "north": { "fireEscape": false, "storefront": true, "awning": false, "scaffolding": false, "cornice": false } } },
+  { "lot": "b1-6-S0", "walls": { "south": { "fireEscape": true, "storefront": false, "awning": false, "scaffolding": true, "cornice": true }, "west": { "fireEscape": false, "storefront": true, "awning": true, "scaffolding": false, "cornice": true } } }
+]

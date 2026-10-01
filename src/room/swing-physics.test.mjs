@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import * as THREE from 'three';
+import {stepSwing,pickAnchor,segmentNearPoint} from './swing-physics.js';
+const input={yaw:0,forward:0,side:0};const make=(x,y,z)=>({position:new THREE.Vector3(x,y,z),velocity:new THREE.Vector3(),anchor:null,ropeLength:0,grounded:false});
+const building={minX:-5,maxX:5,minZ:-5,maxZ:5,height:20};
+const fall=make(0,30,0);for(let i=0;i<360;i++)stepSwing(fall,input,1/120,[building]);assert.equal(fall.position.y,21.6);assert(fall.grounded);
+const wall=make(6,10,0);wall.velocity.x=-30;for(let i=0;i<30;i++)stepSwing(wall,input,1/120,[building]);assert(wall.position.x>=5.42,'side collision stops wall penetration');
+const anchored=make(0,25,0);anchored.anchor=new THREE.Vector3(0,55,-15);anchored.ropeLength=18;for(let i=0;i<60;i++)stepSwing(anchored,input,1/120,[]);assert(anchored.position.y>25,'attached web lifts the player');assert(anchored.velocity.z<0,'web pulls toward its building anchor');
+const release=make(0,40,0);release.velocity.set(12,5,-20);stepSwing(release,input,1/120,[]);assert(release.velocity.x>11.9&&release.velocity.z< -19.9,'release retains momentum');
+assert.equal(pickAnchor(new THREE.Vector3(),new THREE.Vector3(0,0,-1),[new THREE.Vector3(0,20,30)]),null,'anchors behind the player are excluded');
+assert(segmentNearPoint(new THREE.Vector3(0,20,-10),new THREE.Vector3(0,20,10),new THREE.Vector3(0,20,0),2),'fast traversal still collects a ring');
+assert(!segmentNearPoint(new THREE.Vector3(9,20,-10),new THREE.Vector3(9,20,10),new THREE.Vector3(0,20,0),2));
+const run=make(5.42,10,3);run.velocity.set(-2,0,-20);for(let i=0;i<48;i++)stepSwing(run,input,1/120,[building]);assert(run.position.y>=10,'a slide along a wall never loses height (wall run)');assert(run.wall&&run.wall.axis==='x'&&run.wall.dir===1,'wall run reports the wall');
+const still=make(5.42,10,3);still.velocity.set(-2,0,0);for(let i=0;i<48;i++)stepSwing(still,input,1/120,[building]);assert(still.position.y<9.5,'standing against a wall you fall');
+const edge=make(5.42,20.5,4.9);edge.velocity.set(-2,0,-30);for(let i=0;i<60;i++)stepSwing(edge,input,1/120,[building]);assert(edge.velocity.y>0||edge.position.y>22,'running off the top of a wall pops you upward');
+const runner=make(0,21.6,0);runner.grounded=true;for(let i=0;i<240;i++)stepSwing(runner,{yaw:0,forward:1,side:0},1/120,[building]);assert(Math.hypot(runner.velocity.x,runner.velocity.z)>8,'a roof run tops out above 8 m/s');
+console.log('Roof run speed, wall run, rooftop landing, wall collision, web lift, release momentum, anchor selection, and swept ring checks passed.');

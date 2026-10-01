@@ -1,0 +1,141 @@
+{
+ "parts": {
+  "waterTower": {
+   "tris": 114,
+   "budget": 400,
+   "size": [
+    3.6,
+    6.2,
+    3.6
+   ]
+  },
+  "roofTank": {
+   "tris": 84,
+   "budget": 400,
+   "size": [
+    3,
+    2.4,
+    3
+   ]
+  },
+  "hvacBox": {
+   "tris": 40,
+   "budget": 400,
+   "size": [
+    2.4,
+    1.4,
+    2
+   ]
+  },
+  "stairBulkhead": {
+   "tris": 24,
+   "budget": 400,
+   "size": [
+    4,
+    2.6,
+    5
+   ]
+  },
+  "rooftopShack": {
+   "tris": 20,
+   "budget": 400,
+   "size": [
+    5,
+    3,
+    4
+   ]
+  },
+  "billboardFrame": {
+   "tris": 60,
+   "budget": 400,
+   "size": [
+    12,
+    6,
+    1.2
+   ]
+  },
+  "antenna": {
+   "tris": 68,
+   "budget": 400,
+   "size": [
+    0.8,
+    9,
+    0.8
+   ]
+  },
+  "chimney": {
+   "tris": 24,
+   "budget": 400,
+   "size": [
+    1,
+    2.2,
+    1
+   ]
+  },
+  "cornice": {
+   "tris": 24,
+   "budget": 400,
+   "size": [
+    1,
+    0.7,
+    0.3
+   ]
+  },
+  "parapet": {
+   "tris": 12,
+   "budget": 400,
+   "size": [
+    1,
+    1.1,
+    0.4
+   ]
+  },
+  "fireEscape": {
+   "tris": 156,
+   "budget": 400,
+   "size": [
+    3.2,
+    3.6,
+    1.1
+   ]
+  },
+  "storefront": {
+   "tris": 24,
+   "budget": 400,
+   "size": [
+    1,
+    4.2,
+    0.5
+   ]
+  },
+  "awning": {
+   "tris": 20,
+   "budget": 400,
+   "size": [
+    3,
+    0.9,
+    1.6
+   ]
+  },
+  "scaffolding": {
+   "tris": 96,
+   "budget": 400,
+   "size": [
+    6,
+    7.2,
+    1.8
+   ]
+  },
+  "cab": {
+   "tris": 116,
+   "budget": 400,
+   "size": [
+    1.7,
+    1.3,
+    4
+   ]
+  }
+ },
+ "over": [],
+ "source": "blender/build_kit.py"
+}

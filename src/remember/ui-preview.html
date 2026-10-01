@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Remind Me — UI preview</title>
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="data:," />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet" />
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #efe9dc; }
+      .bg { position: fixed; inset: 0; overflow: hidden; background: linear-gradient(180deg, #d9dfe0 0%, #ece6d8 58%, #f3eee2 100%); }
+      .bg i { position: absolute; bottom: -4%; background: linear-gradient(180deg, #f6f2e9, #d9d3c4); border-radius: 6px 6px 0 0; filter: blur(3px); box-shadow: inset -14px 0 0 rgba(120, 112, 96, .12); }
+      .bg .fog { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 70%, rgba(239, 233, 220, .85), transparent 60%), radial-gradient(ellipse at 20% 30%, rgba(255, 255, 255, .5), transparent 50%); }
+      .bg .blur { position: absolute; inset: 0; backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px); }
+      #ui { position: fixed; inset: 0; }
+    </style>
+  </head>
+  <body>
+    <div class="bg">
+      <i style="left:4%;width:9%;height:46%"></i>
+      <i style="left:15%;width:7%;height:62%"></i>
+      <i style="left:24%;width:11%;height:38%"></i>
+      <i style="left:38%;width:8%;height:70%"></i>
+      <i style="left:48%;width:12%;height:52%"></i>
+      <i style="left:62%;width:7%;height:76%"></i>
+      <i style="left:71%;width:10%;height:44%"></i>
+      <i style="left:83%;width:9%;height:60%"></i>
+      <i style="left:93%;width:8%;height:40%"></i>
+      <div class="fog"></div>
+      <div class="blur"></div>
+    </div>
+    <div id="ui"></div>
+    <script type="module" src="/src/remember/ui-preview.js"></script>
+  </body>
+</html>

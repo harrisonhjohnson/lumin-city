@@ -1,0 +1,63 @@
+{
+ "fill": {
+  "lot": "b0-0-N0",
+  "tiers": [
+   {
+    "h": 28,
+    "inset": 0
+   },
+   {
+    "h": 39,
+    "inset": 4
+   }
+  ],
+  "material": "facade2",
+  "warmth": 0.28,
+  "parapet": "cornice"
+ },
+ "roof": {
+  "lot": "b0-0-N0",
+  "parts": [
+   {
+    "part": "roofTank",
+    "x": -1,
+    "z": -6,
+    "rot": 0
+   },
+   {
+    "part": "hvacBox",
+    "x": 1,
+    "z": 6,
+    "rot": 0
+   }
+  ]
+ },
+ "facade": {
+  "lot": "b0-0-N0",
+  "walls": {
+   "north": {
+    "fireEscape": true,
+    "storefront": true,
+    "awning": true,
+    "scaffolding": false,
+    "cornice": true
+   },
+   "west": {
+    "fireEscape": false,
+    "storefront": true,
+    "awning": true,
+    "scaffolding": false,
+    "cornice": true
+   }
+  }
+ },
+ "_judge": {
+  "roofReadsAsNYC": 0.89,
+  "facadeMatchesDistrict": 0.37,
+  "massingPlausible": 0.67,
+  "score": 0.64,
+  "flag": false,
+  "model": "jev-latest",
+  "at": "2026-09-17T16:57:17.750Z"
+ }
+}

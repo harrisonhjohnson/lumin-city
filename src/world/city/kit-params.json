@@ -1,0 +1,50 @@
+{
+ "waterTower": {
+  "legFrac": 0.36,
+  "tankFrac": 0.44,
+  "capFrac": 0.2,
+  "tankDiam": 0.92,
+  "taper": 0.08
+ },
+ "roofTank": {
+  "baseFrac": 0.12,
+  "tankFrac": 0.78,
+  "lidFrac": 0.1,
+  "tankDiam": 0.94
+ },
+ "hvacBox": {
+  "boxFrac": 0.8,
+  "fanFrac": 0.2,
+  "fanDiam": 0.6
+ },
+ "stairBulkhead": {
+  "doorH": 0.8,
+  "doorW": 0.25
+ },
+ "rooftopShack": {
+  "wallFrac": 0.7,
+  "roofFrac": 0.3,
+  "overhang": 0.06
+ },
+ "billboardFrame": {
+  "postFrac": 0.42,
+  "panelFrac": 0.58,
+  "spread": 0.7
+ },
+ "antenna": {
+  "baseFrac": 0.05,
+  "mastFrac": 0.95,
+  "span": 0.9
+ },
+ "chimney": {
+  "stackFrac": 0.85,
+  "crownFrac": 0.15,
+  "overhang": 0.2
+ },
+ "cab": {
+  "bodyFrac": 0.55,
+  "cabinFrac": 0.45,
+  "cabinLen": 0.5,
+  "wheelRad": 0.4
+ }
+}

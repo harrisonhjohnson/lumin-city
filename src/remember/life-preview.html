@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="data:," />
+    <title>Remind Me street life</title>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #d4dae1; font: 12px/1.35 ui-monospace, Menlo, monospace; }
+      canvas { display: block; width: 100%; height: 100%; }
+      #hud { position: fixed; left: 8px; top: 8px; padding: 6px 8px; border-radius: 6px; background: rgba(255, 255, 255, .84); color: #22262e; white-space: pre; pointer-events: none; }
+      #town { position: fixed; right: 8px; top: 8px; max-width: 520px; padding: 6px 8px; border-radius: 6px; background: rgba(255, 255, 255, .84); color: #22262e; white-space: pre; pointer-events: none; }
+      #town:empty { display: none; }
+      #help { position: fixed; left: 8px; bottom: 8px; padding: 4px 8px; border-radius: 6px; background: rgba(255, 255, 255, .7); color: #22262e; white-space: pre; pointer-events: none; }
+    </style>
+  </head>
+  <body>
+    <div id="hud"></div>
+    <div id="town"></div>
+    <div id="help">WASD move player (V: car mode)  drag orbit  wheel zoom  P pause  1 claim fare  2 board  3 release  4 take nearest  H hide HUD  (?town=1: residents)</div>
+    <script type="module" src="./life-preview.js"></script>
+  </body>
+</html>

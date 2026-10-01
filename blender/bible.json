@@ -1,0 +1,171 @@
+{
+ "KIT": {
+  "waterTower": {
+   "on": "roof",
+   "tris": 220,
+   "size": [
+    3.6,
+    6.2,
+    3.6
+   ],
+   "minRoof": 20
+  },
+  "roofTank": {
+   "on": "roof",
+   "tris": 160,
+   "size": [
+    3,
+    2.4,
+    3
+   ],
+   "minRoof": 12
+  },
+  "hvacBox": {
+   "on": "roof",
+   "tris": 60,
+   "size": [
+    2.4,
+    1.4,
+    2
+   ],
+   "minRoof": 8
+  },
+  "stairBulkhead": {
+   "on": "roof",
+   "tris": 40,
+   "size": [
+    4,
+    2.6,
+    5
+   ],
+   "minRoof": 8
+  },
+  "rooftopShack": {
+   "on": "roof",
+   "tris": 120,
+   "size": [
+    5,
+    3,
+    4
+   ],
+   "minRoof": 8
+  },
+  "billboardFrame": {
+   "on": "roof",
+   "tris": 180,
+   "size": [
+    12,
+    6,
+    1.2
+   ],
+   "minRoof": 30
+  },
+  "antenna": {
+   "on": "roof",
+   "tris": 90,
+   "size": [
+    0.8,
+    9,
+    0.8
+   ],
+   "minRoof": 40
+  },
+  "chimney": {
+   "on": "roof",
+   "tris": 30,
+   "size": [
+    1,
+    2.2,
+    1
+   ],
+   "minRoof": 8,
+   "maxRoof": 18
+  },
+  "cornice": {
+   "on": "wall",
+   "tris": 60,
+   "size": [
+    1,
+    0.7,
+    0.3
+   ]
+  },
+  "parapet": {
+   "on": "wall",
+   "tris": 24,
+   "size": [
+    1,
+    1.1,
+    0.4
+   ]
+  },
+  "fireEscape": {
+   "on": "wall",
+   "tris": 360,
+   "size": [
+    3.2,
+    3.6,
+    1.1
+   ],
+   "repeatY": 3.6
+  },
+  "storefront": {
+   "on": "wall",
+   "tris": 140,
+   "size": [
+    1,
+    4.2,
+    0.5
+   ]
+  },
+  "awning": {
+   "on": "wall",
+   "tris": 50,
+   "size": [
+    3,
+    0.9,
+    1.6
+   ]
+  },
+  "scaffolding": {
+   "on": "wall",
+   "tris": 400,
+   "size": [
+    6,
+    7.2,
+    1.8
+   ]
+  },
+  "cab": {
+   "on": "street",
+   "tris": 200,
+   "size": [
+    1.7,
+    1.3,
+    4
+   ]
+  }
+ },
+ "PALETTE": {
+  "facade0": 10112314,
+  "facade1": 7292212,
+  "facade2": 5531253,
+  "facade3": 12365978,
+  "facade4": 11045986,
+  "trim": 2239801,
+  "stone": 7107448,
+  "window": 6918044,
+  "windowLit": 15255442,
+  "asphalt": 2502972,
+  "cab": 16169228,
+  "water": 2376538
+ },
+ "BUDGET": {
+  "trisPerPart": 400,
+  "tiersPerBuilding": 3,
+  "partsPerRoof": 6,
+  "partsPerWall": 4,
+  "instances": 80000,
+  "drawCalls": 60
+ }
+}
