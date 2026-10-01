@@ -2,10 +2,11 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { PALETTE, SKY, KIT, WORLD, WINDOW } from './bible.js';
 import { buildCity } from './build.js';
+import { makeWater } from './water.js';
 import { DEFAULT_LOOK, GLOW, paletteFor, lookFor } from './looks.js';
 import { DEFAULT_TIME, DEFAULT_WEATHER, timeFor, weatherFor } from './conditions.js';
 
-// The only three.js file in the city: draws whatever build.js returns. Kit parts render as
+// One of two three.js files in the city (water.js is the other): draws whatever build.js returns. Kit parts render as
 // stand-in primitives until public/city/kit.glb replaces them (same names, same origins:
 // a part's origin is the centre of its footprint at its base).
 // Night-lane rows ship with the bundle; build.js re-validates each one. `overrides` are
@@ -71,10 +72,14 @@ export function buildManhattan({ overrides = {}, look = DEFAULT_LOOK, time = DEF
   const [west, east] = SHORE, zMid = (WORLD.z[0] + WORLD.z[1]) / 2;
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(east - west, 1000), mat('asphalt'));
   ground.rotation.x = -Math.PI / 2; ground.position.set((west + east) / 2, -0.03, zMid); scene.add(ground);
-  for (const [from, to] of [[west - 700, west], [east, east + 700]]) {
-    const river = new THREE.Mesh(new THREE.PlaneGeometry(to - from, 1400), mat('water'));
-    river.rotation.x = -Math.PI / 2; river.position.set((from + to) / 2, -0.2, zMid); scene.add(river);
-  }
+  const rivers = [[west - 700, west, 1], [east, east + 700, -1]].map(([from, to, quay]) => {
+    const river = makeWater({
+      width: to - from, depth: 1400, quay, colour: palette.water, fogColour, skyColour: scene.background, weather: Wx, lit: T.lit, glow: glow?.[0],
+      sunDirection: sun.position, sunColour: sun.color.clone().multiplyScalar(sun.intensity), hemi: T.hemi,
+    });
+    river.mesh.position.set((from + to) / 2, -0.2, zMid); scene.add(river.mesh);
+    return river;
+  });
   const quay = (x) => { const m = new THREE.Mesh(unit, mat('stone')); m.position.set(x, -0.1, zMid); m.scale.set(3, 0.5, 1000); scene.add(m); };
   quay(west); quay(east);
   const bw = city.broadway, dx = bw.to[0] - bw.from[0], dz = bw.to[1] - bw.from[1];
@@ -95,7 +100,7 @@ export function buildManhattan({ overrides = {}, look = DEFAULT_LOOK, time = DEF
 
   return {
     scene, route, rings, city, look, time, weather,
-    tick: (dt, camera) => { precip?.tick(dt, camera.position); steam?.tick(dt, camera); },
+    tick: (dt, camera) => { for (const r of rivers) r.tick(dt); precip?.tick(dt, camera.position); steam?.tick(dt, camera); },
     buildings: city.buildings,
     anchors: city.anchors.map((a) => new THREE.Vector3(a[0], a[1], a[2])),
     start: new THREE.Vector3(...city.start),
@@ -155,7 +160,6 @@ function makeMaterial(name, palette, wet) {
   if (name.startsWith('neon') || GLOW.includes(name)) return new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.6, roughness: 0.4 });
   if (name === 'window') return new THREE.MeshStandardMaterial({ color, emissive: 0x628396, emissiveIntensity: 0.18, metalness: 0.4, roughness: 0.28 });
   if (name === 'windowLit') return new THREE.MeshStandardMaterial({ color, emissive: color === PALETTE.windowLit ? 0xffc782 : color, emissiveIntensity: 0.65 });
-  if (name === 'water') return new THREE.MeshStandardMaterial({ color, roughness: 0.28, metalness: 0.4 });
   if (name === 'asphalt' || name === 'stone') return new THREE.MeshStandardMaterial({ color, roughness: wet ? 0.2 : name === 'asphalt' ? 0.45 : 0.72, metalness: wet ? 0.2 : name === 'asphalt' ? 0.15 : 0 });
   if (name === 'cab') return new THREE.MeshStandardMaterial({ color, roughness: 0.35, metalness: 0.25 });
   return new THREE.MeshStandardMaterial({ color, roughness: name === 'trim' ? 0.8 : 0.72 });
