@@ -1,3 +1,5 @@
+import { chatLine } from './chatter.js';
+import { giftWeight } from './fame.js';
 // What a resident says when you walk up to them, and what happens when you answer. Pure:
 // reads town state, returns words and changes; main.js shows the card and applies them.
 
@@ -59,25 +61,21 @@ export function choices(r, wallet, scale) {
 }
 
 // Apply an answer. Returns { line, opinion delta, cash to/from the player, memories found }.
-export function answer(r, id, town, player, scale) {
+export function answer(r, id, town, player, scale, ctx = {}) {
   r.met = true;
   if (id === 'chat') {
-    const friend = town.person(r.friends[hash(r.id + town.day) % r.friends.length]);
-    const rumour = pick([
-      `${friend?.first || 'My friend'} says ${placeName(town, friend?.shop || friend?.work || 'park', friend)} is the place to be.`,
-      `They say there's something hidden on a rooftop near the big tower. Never looked myself.`,
-      `Rent's due at midnight. ${r.landlord ? `${town.person(r.landlord)?.first} never forgets.` : 'Glad I own my place.'}`,
-      `I used to ${pick(['skate', 'race', 'deliver pizzas', 'drive a cab'], r, 3)} when I was your age.`,
-      `The best ${scale < 1 ? 'bread' : 'slice'} in town is at ${town.shopName(town.shops[hash(r.id) % town.shops.length].id)}.`,
-    ], r, town.day);
+    // Something they haven't told you before; chatting twice in a day still pleases, less.
+    const line = chatLine(r, town, { player, ...ctx }) || pick(['That\'s all my news, honestly. Come back tomorrow — something always happens.', 'I\'ve talked your ear off. Go on, the city\'s waiting.'], r, town.day);
+    const again = r.chatted === town.day; r.chatted = town.day;
     r.needs.social = Math.min(1, r.needs.social + 0.25);
     town.note(r, `Chatted with ${player}`);
-    return { line: rumour, opinion: 0.08, cash: 0, memories: 0 };
+    return { line, opinion: again ? 0.02 : 0.08, cash: 0, memories: 0 };
   }
   if (id === 'give') {
     const gift = Math.round(10 * scale * 100) / 100;
     town.pay(r, gift, `${player} gave me ${money(gift)}`);
-    return { line: r.money < 30 * scale ? 'You have no idea what this means. Thank you.' : pick(['That\'s kind of you. Odd, but kind.', 'Well! Thank you.', 'I\'ll pay it forward.'], r), opinion: r.money < 30 * scale ? 0.3 : 0.15, cash: -gift, memories: 0 };
+    const w = giftWeight(r, town);   // the third bill this week is worth less than the first
+    return { line: w < 0.5 ? pick(['Again? People will start to talk.', 'You don\'t have to keep doing this, you know.', 'I\'m starting to wonder what you want.'], r, town.day) : r.money < 30 * scale ? 'You have no idea what this means. Thank you.' : pick(['That\'s kind of you. Odd, but kind.', 'Well! Thank you.', 'I\'ll pay it forward.'], r), opinion: (r.money < 30 * scale ? 0.3 : 0.15) * w, cash: -gift, memories: 0 };
   }
   if (id === 'favour') {
     if (r.opinion > 0.35) {
@@ -93,3 +91,31 @@ export function answer(r, id, town, player, scale) {
 export function money(v) { return `$${v >= 100 ? Math.round(v).toLocaleString() : v.toFixed(2)}`; }
 const ord = (n) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th'}`;
 export function where(door) { return `${ord(Math.round(door.x / 140) + 3)} Ave & ${ord(Math.max(1, Math.round((220 - door.z) / 80)))} St`; }
+
+// ---- ready for a model to voice them --------------------------------------------------------
+
+// Everything a language model needs to play this resident, small enough to send each turn:
+// who they are, how they feel, what they've been doing, and what's passed between you.
+export function dossier(r, town, player) {
+  const band = (v) => (v < 0.25 ? 'low' : v < 0.6 ? 'middling' : 'high');
+  const name = (id) => (id === 'player' ? player : town.person(id)?.name || null);
+  return {
+    world: { city: town.city, year: town.era, hour: Math.floor(town.hour), day: town.day + 1 },
+    who: { name: r.name, job: r.job, shop: r.shop ? town.shopName(r.shop) : null, home: town.place(r.home) ? where(town.place(r.home).door) : null },
+    mood: moodOf(r),
+    needs: Object.fromEntries(Object.entries(r.needs).map(([k, v]) => [k, band(v)])),
+    traits: Object.fromEntries(Object.entries(r.traits).map(([k, v]) => [k, band(v)])),
+    money: Math.round(r.money), rent: r.rent || 0, landlord: name(r.landlord),
+    friends: r.friends.map(name).filter(Boolean),
+    doing: (DOING[r.act.kind] || (() => 'not doing much'))(r, town),
+    recently: r.log.slice(0, 5).map((l) => l.text),
+    you: { met: r.met, opinion: Math.round(r.opinion * 100) / 100, said: (r.said || []).slice(-8) },
+  };
+}
+
+// Keep a short history of what was said between the player and a resident (both sides), so
+// the next conversation can pick up where the last one left off.
+export function remember(r, who, text, town) {
+  (r.said ||= []).push({ who, text: String(text).slice(0, 280), day: town.day, hour: Math.floor(town.hour) });
+  if (r.said.length > 20) r.said.splice(0, r.said.length - 20);
+}

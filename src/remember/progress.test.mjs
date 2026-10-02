@@ -31,14 +31,16 @@ test('a fork: the chosen side is cheap, the road not taken costs three times as 
   assert.equal(p.memories, MEMORIES_FOR.A + MEMORIES_FOR.S - FORK_COST);
 });
 
-test('an A against the aliens gives laser and ice, and opens the kaiju', () => {
+test('a B against the aliens gives laser and ice; an A opens the kaiju', () => {
   let p = { ...play(play(unlock(fresh(), 'patrol'), 'patrol', 'B'), 'patrol', 'S'), memories: 9000 };
   p = unlock(choose(p, 'patrol', 'aliens'), 'aliens');
-  let r = finish(p, 'aliens', 'B');
+  let r = finish(p, 'aliens', 'C');
   assert.equal(r.powers, null);
-  assert.equal(stateOf(r.next, 'kaiju'), 'locked');
+  r = finish(r.next, 'aliens', 'B');
+  assert.ok(r.powers, 'laser and ice at a B');
+  assert.equal(stateOf(r.next, 'kaiju'), 'locked', 'the kaiju still needs an A');
   r = finish(r.next, 'aliens', 'A');
-  assert.ok(r.powers);
+  assert.equal(r.powers, null);
   assert.deepEqual(r.next.powers, ['laser', 'ice']);
   assert.equal(stateOf(r.next, 'kaiju'), 'buy');
   assert.ok(finish(unlock(r.next, 'kaiju'), 'kaiju', 'A').hero);
@@ -75,4 +77,13 @@ test('load survives junk and old saves', () => {
   assert.deepEqual(old.unlocked, ['skate']);
   assert.equal(old.memories, 0);
   assert.deepEqual(old.forks, {});
+});
+
+test('a save from before the path, holding only a later game, still gets a free way in', () => {
+  const p = load(JSON.stringify({ memories: 325, unlocked: ['taxi'], best: { taxi: 'D' } }));
+  assert.equal(costOf(p, 'pizza'), 0);
+  assert.ok(canUnlock(p, 'pizza'));
+  const q = unlock(p, 'pizza');
+  assert.ok(isOpen(q, 'pizza') && isOpen(q, 'taxi'));
+  assert.equal(costOf(q, 'skate'), UNLOCK_COST);
 });

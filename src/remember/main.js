@@ -2,12 +2,16 @@ import * as THREE from 'three';
 import { createUI } from './ui.js';
 import * as models from './models.js';
 import { createWorld } from './world.js';
-import { createControls, createMover, createChaseCamera } from './rig.js';
+import { createControls, createMover, createChaseCamera, inWater, ISLAND } from './rig.js';
 import { MODES } from './modes.js';
 import { createLife } from './life.js';
 import * as progression from './progress.js';
 import { createTown, TIME_SCALE, START_HOUR, PRICE_SCALE } from './town.js';
-import { greet, choices, answer, where as addressOf } from './talk.js';
+import { greet, choices, answer, remember as rememberSaid, where as addressOf, placeName } from './talk.js';
+import * as social from './social.js';
+import * as fame from './fame.js';
+import * as quests from './quests.js';
+import { lootToday, pickUp, collectiblesFor } from './loot.js';
 import * as civic from './civic.js';
 import { rankFor } from './memory.js';
 import { CITIES, YEARS, SEASON_CHOICES, TIME_CHOICES, weatherChoices, LINES, ACTIVITIES, worldSettings } from './memory.js';
@@ -49,14 +53,14 @@ const save = (next) => { progress = next; try { localStorage.setItem(SAVE_KEY, J
 // The streets' static traffic is off: life.js drives every vehicle once the day is remembered.
 // Buildings knocked down this round (the kaiju); the city is whole again after.
 const destroyed = new Set();
-function rebuild({ surface = true } = {}) {
+function rebuild({ surface = true, preview = false } = {}) {
   const settings = worldSettings(memory);
   world.build({ ...settings, look: { ...settings.look, traffic: { none: true } }, destroyed, surface });
   world.scene.add(group);
   if (player) world.scene.add(player.root);
-  if (settings.stage === 4 && !life) {
+  if (settings.stage === 4 && !life && !preview) {
     town = openTown();
-    life = createLife({ era: memory.year, city: memory.city, rng: createRng(812 + memory.year.length), town });
+    life = createLife({ era: memory.year, city: memory.city, rng: createRng(812 + memory.year.length), town, crowd: 1.4 });
   }
   if (life) world.scene.add(life.group);
   return settings;
@@ -72,6 +76,8 @@ function openTown() {
   try { saved = JSON.parse(localStorage.getItem(townKey()) || 'null'); } catch { /* storage unavailable or junk */ }
   const t = createTown({ city: memory.city, era: memory.year, saved: saved?.v === 1 ? saved : null, hour: START_HOUR[memory.time] ?? 12 });
   civic.initCivic(t);
+  social.buildSocial(t);
+  if (!t._questsHooked) { t.onDay.push(quests.pizzaNightly, fame.nightly); t._questsHooked = true; }
   // Coming back to a day means you've slept since; a day remembered from late evening runs on
   // through the next midnight rather than ending a few minutes in.
   t.civic.lastCheckIn = t.day + (t.hour >= 20 ? 1 : 0);
@@ -93,33 +99,187 @@ async function talkTo(resident, ped = null) {
   if (talking) return;
   talking = true; controls.enabled = false; controls.release();
   if (ped) life?.claim(ped);   // they stop and face you while you talk
+  const done = () => { ui.closeTalk?.(); if (ped) life?.release(ped, ped.position.clone()); talking = false; controls.enabled = true; controls.pressed.clear(); };
   if (!resident) {
     const n = (ped?.id ?? 0) % 4, local = town?.outdoors(mover.feet, 120).map((o) => o.resident)[0];
     const pickd = await ui.talk({ name: VISITOR_NAMES[n], job: 'Visiting', mood: 'fine', opinion: null, portraitSeed: `visitor-${ped?.id}`, line: VISITOR_LINES[n], facts: ['Not from around here'], options: [{ id: 'ask', label: 'Ask who lives around here' }] });
     if (pickd) await ui.talk({ name: VISITOR_NAMES[n], job: 'Visiting', mood: 'happy', opinion: null, portraitSeed: `visitor-${ped?.id}`, line: local ? `I met ${local.name} earlier — the ${local.job.toLowerCase()}. Lives near here, I think.` : 'No idea, sorry. Everyone seems to be indoors.', facts: ['Not from around here'], options: [] });
-    ui.closeTalk?.();
-    if (ped) life?.release(ped, ped.position.clone());
-    talking = false; controls.enabled = true; controls.pressed.clear();
-    return;
+    return done();
   }
   const card = () => {
     const g = greet(resident, town, memory.name), wallet = progression.rich(progress) ? Infinity : progress.cash;
-    return { name: resident.name, job: resident.job, place: resident.shop ? town.shopName(resident.shop) : undefined, mood: g.mood, money: resident.money, opinion: resident.met ? resident.opinion : null, portraitSeed: resident.look.seed, line: g.line, facts: g.facts, options: choices(resident, wallet, scale()) };
+    return { name: resident.name, job: resident.job, place: resident.shop ? town.shopName(resident.shop) : undefined, mood: g.mood, money: resident.money, opinion: resident.met ? resident.opinion : null, portraitSeed: resident.look.seed, line: g.line, facts: g.facts, options: [...questOptions(resident, wallet), ...choices(resident, wallet, scale())] };
   };
+  // The influential are busy: a stranger gets brushed off unless someone they trust vouches.
+  const gate = social.access(town, resident);
+  if (!gate.ok) {
+    await ui.talk({ ...card(), line: gate.line, facts: [...card().facts.slice(0, 2), 'Busy — and listened to by a lot of people'], options: [] });
+    ui.hud.toast(gate.hint);
+    return done();
+  }
+  social.seen(town, resident);
   let view = card();
+  if (gate.voucher && !resident.met) view.line = `Oh — you're the one ${gate.voucher.first} keeps talking about. ${view.line}`;
   for (;;) {
     const pickd = await ui.talk(view);
     if (!pickd) break;
-    const res = answer(resident, pickd, town, memory.name, scale());
+    if (pickd.startsWith('quest-')) { view = { ...card(), line: await questAtTalk(resident, pickd) }; continue; }
+    const res = answer(resident, pickd, town, memory.name, scale(), chatCtx());
+    rememberSaid(resident, 'player', view.options.find((o) => o.id === pickd)?.label || pickd, town);
+    rememberSaid(resident, 'them', res.line, town);
     resident.opinion = Math.max(-1, Math.min(1, resident.opinion + res.opinion));
     if (res.cash) earn(res.cash);
     if (res.memories) { save(progression.found(progress, res.memories)); ui.memories(progress.memories, res.memories); }
-    view = { ...card(), line: res.line, options: card().options };
+    view = { ...card(), line: res.line };
   }
-  ui.closeTalk?.();
-  if (ped) life?.release(ped, ped.position.clone());
+  done();
+}
+
+// What a chatty resident can point you at: real loot near their home, by street address.
+const chatCtx = () => ({
+  address: (p) => addressOf({ x: p.x, z: p.z }),
+  lootNear: (x, z) => lootToday(town, world.city.buildings, { park: PARK_RECT, island: ISLAND }).filter((it) => it.kind !== 'lost').map((it) => [it, Math.hypot(it.x - x, it.z - z)]).filter(([, d]) => d < 220).sort((a, b) => a[1] - b[1])[0]?.[0] || null,
+});
+
+// ---- quests -------------------------------------------------------------------------------
+
+const PARK_RECT = { x: -70, z: -140, w: 110, d: 62 };
+const hasWheels = () => ['race', 'taxi', 'pizza'].some((g) => progress.kept.includes(g));
+const questCan = () => ({ ride: hasWheels(), buildings: world.city.buildings, park: PARK_RECT, island: ISLAND });
+let tracked = null;   // the quest whose next step shows in the HUD (and on the arrow, for rides)
+
+function questOptions(r, wallet) {
+  const q = quests.questFor(r, town, questCan());
+  if (!q) return [];
+  if (q.state === 'offered') return [{ id: 'quest-ask', label: 'Ask what they need', hint: q.title }];
+  if (quests.completableAtTalk(q)) {
+    if (q.type === 'money') return [{ id: 'quest-done', label: `Give them $${q.data.amount.toFixed(2)}`, disabled: wallet < q.data.amount, hint: wallet < q.data.amount ? 'You can\'t cover it yet' : 'What they asked for' }];
+    if (q.type === 'rent') return [{ id: 'quest-done', label: 'Cut their rent by a fifth', hint: `From $${r.rent.toFixed(2)} a day` }];
+    return [{ id: 'quest-done', label: `Give back ${q.data.item}`, hint: 'You found it' }];
+  }
+  return [];
+}
+
+async function questAtTalk(r, pickd) {
+  const q = quests.questFor(r, town, questCan());
+  if (pickd === 'quest-ask') {
+    const rw = q.reward, effects = [{ text: `${r.first} will think a lot more of you`, tone: 'good' }, { text: 'And tell their friends', tone: 'good' }, ...(rw.memories ? [{ text: `+${rw.memories} memories`, tone: 'good' }] : []), ...(rw.cash ? [{ text: `+$${rw.cash.toFixed(2)}`, tone: 'good' }] : [])];
+    const reward = [`${r.first} will think a lot more of you — and tell their friends`, rw.memories && `+${rw.memories} memories`, rw.cash && `+$${rw.cash.toFixed(2)}`].filter(Boolean).join(' · ');
+    const yes = ui.quest
+      ? await ui.quest({ who: r.name, portraitSeed: r.look.seed, title: q.title, detail: q.detail, reward, options: [{ id: 'accept', label: 'I\'ll help' }, { id: 'no', label: 'Not now' }] })
+      : await ui.decision({ kicker: `${r.first.toUpperCase()} NEEDS`, title: q.title, situation: q.detail, options: [{ id: 'accept', label: 'I\'ll help', effects }, { id: 'no', label: 'Not now', effects: [] }] });
+    if (yes !== 'accept') return 'Oh. Never mind, then.';
+    quests.accept(town, q); tracked = q;
+    rememberSaid(r, 'player', `I'll help: ${q.title}`, town);
+    return { money: 'You would? Thank you. Really.', rent: 'You\'d think about it? That\'s more than most landlords would.', pizza: 'Someone has to. You\'d be doing the whole street a favour.', ride: 'You\'re a lifesaver. I\'ll wait right here — bring the car round.', lost: 'You\'d look? It means more than you know.' }[q.type];
+  }
+  if (q.type === 'money') earn(-q.data.amount);
+  finishQuest(q);
+  return { money: 'I don\'t know how to thank you. I won\'t forget it.', rent: 'You mean it? I can breathe again.', lost: `My ${q.data.item}! Where was it? Never mind — thank you.` }[q.type];
+}
+
+function finishQuest(q) {
+  const rw = quests.complete(town, q);
+  if (rw.memories) { save(progression.found(progress, rw.memories)); ui.memories(progress.memories, rw.memories); }
+  if (rw.cash) earn(rw.cash);
+  if (tracked === q) tracked = null;
+  ui.hud.toast(`Done: ${q.title}. ${town.person(q.who).first} won't forget it.`, 'good');
+  saveTown();
+}
+
+// Where the tracked quest points: the passenger, then the appointment; nothing for lost items
+// (the hint says roughly where — that's the looking).
+function questTarget() {
+  const q = tracked;
+  if (!q || q.state !== 'active' || q.type !== 'ride') return null;
+  if (!q.data.picked) { const ped = life?.pedFor(q.who), w = town.where(town.person(q.who)); return ped ? ped.position : new THREE.Vector3(w.x, 1, w.z); }
+  const d = town.place(q.data.to).door; return new THREE.Vector3(d.x, 1, d.z);
+}
+const questLine = () => {
+  const q = tracked;
+  if (!q || q.state !== 'active') return null;
+  const who = town.person(q.who).first;
+  if (q.type === 'ride') return q.data.picked ? `Get ${who} to ${placeName(town, q.data.to, town.person(q.who))} by ${hhmm(q.data.due)}` : `Pick up ${who} — you'll need wheels`;
+  if (q.type === 'lost') return q.data.found ? `Bring ${q.data.item} back to ${who}` : `Find ${who}'s ${q.data.item} — ${q.data.where}, near their home`;
+  if (q.type === 'pizza') return 'Work a shift at the Pizza shop — get a B or better';
+  return `${q.title} — talk to ${who}`;
+};
+
+// Free roam, every frame: rides, the day's loot, the tracked line.
+const lootModels = new Map();
+let lootClock = 0;
+function roamTick(dt, m, hud) {
+  for (const q of quests.expire(town)) { ui.hud.toast(`Too late: ${q.title}. ${town.person(q.who).first} is disappointed.`, 'bad'); if (tracked === q) tracked = null; }
+  const q = tracked;
+  if (q?.type === 'ride' && q.state === 'active') {
+    const r = town.person(q.who), inCar = m.M.kind === 'vehicle';
+    if (!q.data.picked) {
+      const at = questTarget();
+      if (at && inCar && Math.hypot(at.x - m.feet.x, at.z - m.feet.z) < 8 && Math.abs(m.speed) < 7) {
+        const ped = life?.pedFor(q.who);
+        town.hail(r, m.feet); if (ped) life.board(ped);
+        q.data.picked = true; hud.toast(`${r.first} hops in. "${placeName(town, q.data.to, r)}, please!"`, 'good');
+      }
+    } else {
+      const d = town.place(q.data.to).door;
+      if (Math.hypot(d.x - m.feet.x, d.z - m.feet.z) < 10 && Math.abs(m.speed) < 8) {
+        town.dropOff(r, q.data.to); const ped = life?.pedFor(q.who); if (ped) life.release(ped, new THREE.Vector3(d.x, 0.18, d.z));
+        finishQuest(q);
+      }
+    }
+  }
+  hud.quest?.(questLine());
+  // Loot: models only for what's near; sparkles show up close, so you have to go looking.
+  if ((lootClock -= dt) <= 0) {
+    lootClock = 0.4;
+    const items = lootToday(town, world.city.buildings, { park: PARK_RECT, island: ISLAND });
+    const live = new Set();
+    for (const it of items) {
+      const d = Math.hypot(it.x - m.feet.x, it.z - m.feet.z);
+      if (d > 80) continue;
+      live.add(it.id);
+      if (!lootModels.has(it.id)) { const o = models.makeOrb(LOOT_COLOUR[it.kind]); o.scale.setScalar(it.kind === 'lost' ? 0.9 : 0.6); o.position.set(it.x, it.y, it.z); o.userData.item = it; group.add(o); lootModels.set(it.id, o); }
+    }
+    for (const [id, o] of lootModels) if (!live.has(id) || !o.parent) { o.removeFromParent(); models.disposeModel?.(o); lootModels.delete(id); }
+  }
+  const body = m.feet.add(new THREE.Vector3(0, 1, 0));
+  for (const [id, o] of lootModels) {
+    o.visible = body.distanceTo(o.position) < 42;
+    if (body.distanceTo(o.position) > 2.6) continue;
+    const it = o.userData.item;
+    pickUp(town, it);
+    o.removeFromParent(); lootModels.delete(id);
+    if (it.kind === 'memory') { save(progression.found(progress, it.amount)); ui.memories(progress.memories, it.amount); hud.toast(`A memory, ${it.where}  +${it.amount}`, 'good'); }
+    if (it.kind === 'cash') { earn(it.amount); hud.toast(`Found $${it.amount.toFixed(2)} ${it.where}`, 'good'); }
+    if (it.kind === 'keepsake') { const set = collectiblesFor(town.era); hud.toast(`Found ${it.label} — ${Object.keys(town.collection).length}/${set.length} keepsakes`, 'good'); }
+    if (it.kind === 'lost') { const q2 = town.quests.find((x) => x.id === it.quest); hud.toast(`Found ${it.label}! Bring it back to ${town.person(q2.who).first}.`, 'good'); tracked = q2; }
+  }
+}
+const LOOT_COLOUR = { memory: '#ffd66b', cash: '#6bd68a', keepsake: '#b98cff', lost: '#ff6b6b' };
+
+async function openJournal() {
+  if (talking || !ui.journal) return;
+  talking = true; controls.enabled = false; controls.release();
+  const qs = (town.quests || []).filter((q) => q.state !== 'offered' && q.state !== 'lapsed').slice(-20).reverse();
+  const set = collectiblesFor(town.era);
+  await ui.journal({
+    quests: qs.map((q) => ({ id: q.id, who: town.person(q.who).name, title: q.title, detail: q.detail, reward: `${q.reward.memories ? `+${q.reward.memories} memories` : ''}${q.reward.cash ? ` · +$${q.reward.cash.toFixed(2)}` : ''}`, state: q.state, due: q.type === 'ride' && q.state === 'active' ? hhmm(q.data.due) : undefined })),
+    collectibles: [{ label: 'Keepsakes', found: set.filter((k) => town.collection[k]).length, total: set.length }],
+  });
   talking = false; controls.enabled = true; controls.pressed.clear();
 }
+
+// The three things every life in Lumin City is reaching for.
+function goalMeters() {
+  const g = civic.goalProgress(town, progress);
+  const powers = (progress.kept.filter((k) => progression.PERKS[k]?.mover).length + progress.powers.length + (progress.achieved.includes('hero') ? 2 : 0)) / 10;
+  return [
+    { id: 'land', label: 'Own land', value: g.owner, detail: `${civic.owned(town).length} buildings` },
+    { id: 'mayor', label: 'Become mayor', value: g.mayor, detail: town.civic.mayor === 'player' ? 'You are mayor' : (() => { const f = civic.forecast(town); return `Tonight's vote: ${f.you} of ${f.you + f.them} · election in ${Math.max(0, civic.daysToElection(town))} days`; })() },
+    { id: 'powers', label: 'Superpowers', value: Math.min(1, powers), detail: `${progress.powers.length ? 'Laser & ice · ' : ''}${progress.kept.length} kept` },
+  ];
+}
+
 // How much road the player takes up, so traffic leaves room behind a car, not just a person.
 const PLAYER_SIZE = { car: 2.6, scooter: 1.2, board: 0.8, foot: 0.5, swing: 0.5, flight: 0.8 };
 const lifePlayer = { position: new THREE.Vector3(0, 0, -220), velocity: new THREE.Vector3(), speed: 0, radius: 1, vehicle: false };
@@ -194,6 +354,32 @@ function placePlayer(dt) {
   }
 }
 
+// The edges of the memory. Roll into the water and you're fished out where you last stood on
+// dry land (no harm done); fly too far and the narrator turns you round.
+const lastSafe = { at: new THREE.Vector3(), heading: 0, timer: 0, set: false };
+let edgeNag = 0, splashing = false;
+function edgesAndWater(dt) {
+  const feet = mover.feet;
+  edgeNag -= dt;
+  if (mover.edge && edgeNag <= 0) { ui.hud.toast('The memory ends here. Turn back.'); edgeNag = 4; }
+  const wet = inWater(feet) && feet.y < 0.6;
+  if (!wet && (mover.grounded || mover.M.kind === 'flight') && (lastSafe.timer -= dt) <= 0) {
+    lastSafe.at.copy(feet); lastSafe.heading = mover.heading; lastSafe.timer = 0.5; lastSafe.set = true;
+  }
+  if (wet && !splashing) {
+    splashing = true;
+    ui.hud.callout('SPLASH!');
+    setTimeout(() => {
+      if (mover) {
+        mover.teleport(lastSafe.set ? lastSafe.at.clone().setY(Math.max(0, lastSafe.at.y)) : round.spawn.at, lastSafe.heading);
+        controls.yaw = mover.heading; chase.snap(mover, controls);
+        ui.hud.toast('Oops! Fished out and back on dry land.');
+      }
+      splashing = false;
+    }, 650);
+  }
+}
+
 function animateGroup(dt) {
   group.traverse((o) => { o.userData.animate?.(clock, 0); });
 }
@@ -212,6 +398,7 @@ function tick(dt) {
         if (timeLeft <= 0) round.done = true;
       }
     }
+    if (mover && phase === 'play' && !talking) edgesAndWater(dt);
     if (mover) {
       placePlayer(dt);
       chase.update(mover, controls, dt);
@@ -261,34 +448,56 @@ async function remember() {
   await ui.say(LINES.dayLength[memory.time]);
 
   memory.name = await ui.askText('And remind me — what did everyone call you back then?', { placeholder: 'your name', maxLength: 18, fallback: 'Kid' });
+  saveCurrent();
   await ui.say(`${memory.name}. Of course it was.`);
 }
 
 // The board is the path: three ways in, what each leads to, and what it takes to get there.
 // Open games play; ready ones cost memories; locked ones say what they need first.
+// How long each activity takes: the real minutes on its clock, and — since the town runs 60×
+// — the hour of the day it'll be when you're done.
+function howLong(id) {
+  const t = MODES[id]?.time;
+  if (t === null || t === undefined) return 'until midnight';
+  const m = Math.floor(t / 60), sec = t % 60;
+  return m ? `${m}${sec >= 30 ? '½' : ''} min` : `${t} s`;
+}
+const hhmm = (clock) => { const h = (clock % 86400) / 3600, hh = Math.floor(h), mm = Math.floor((h - hh) * 60); return `${((hh + 11) % 12) + 1}:${String(mm).padStart(2, '0')} ${hh < 12 ? 'AM' : 'PM'}`; };
+function endsAt(id) {
+  const t = MODES[id]?.time;
+  if (!town) return howLong(id);
+  if (t === null || t === undefined) return 'until midnight';
+  const end = town.clock + t * TIME_SCALE;
+  return Math.floor(end / 86400) > town.day ? '→ past midnight' : `→ ${hhmm(end)}`;
+}
 const ORDER = ['skate', 'pizza', 'patrol', 'race', 'shop', 'taxi', 'heist', 'aliens', 'kaiju'];
 const NAMES = Object.fromEntries(ACTIVITIES.map((a) => [a.id, a.label]));
 async function chooseActivity() {
-  const first = progress.unlocked.length === 0;
+  const first = !progression.hasStart(progress);
   ui.memories(progress.memories); showWallet();
+  if (town) ui.goals?.(goalMeters());
   for (;;) {
-    const options = [...ORDER, ...(first ? [] : ['roam'])].map((id) => {
+    const options = [...ORDER, ...(progress.unlocked.length ? ['roam', 'wait'] : [])].map((id) => {
       const a = ACTIVITIES.find((x) => x.id === id), node = progression.PATH[id];
-      if (id === 'roam') return { id, label: a.label, hint: a.hint, glyph: a.glyph, colour: a.colour, state: 'open', tier: 3, leadsTo: [] };
-      const state = first ? (node.start ? 'buy' : 'locked') : progression.stateOf(progress, id);
+      if (id === 'roam') return { id, label: a.label, hint: `${a.hint} · ${howLong(id)}`, glyph: a.glyph, colour: a.colour, state: 'open', tier: 3, leadsTo: [], badge: '→ MIDNIGHT' };
+      if (id === 'wait') return { id, label: a.label, hint: a.hint, glyph: a.glyph, colour: a.colour, state: 'open', tier: 3, leadsTo: [] };
+      // A free first pick looks like an open card with a PICK ONE tag, not a zero-cost unlock.
+      const state = first && !progression.isOpen(progress, id) ? (node.start ? 'open' : 'locked') : progression.stateOf(progress, id);
       const kept = progress.kept.includes(id) ? progression.PERKS[id] : null;
-      const badge = first && node.start ? 'PICK ONE' : kept ? `KEPT: ${kept.label.toUpperCase()}` : undefined;
+      const badge = first && node.start && !progression.isOpen(progress, id) ? 'PICK ONE' : kept ? `KEPT: ${kept.label.toUpperCase()}` : endsAt(id).toUpperCase();
       const cost = first ? 0 : progression.costOf(progress, id);
       return {
-        id, label: a.label, hint: a.hint, glyph: a.glyph, colour: a.colour, state, tier: node.tier, leadsTo: node.leadsTo || [], badge,
+        id, label: a.label, hint: `${a.hint} · ${howLong(id)}`, glyph: a.glyph, colour: a.colour, state, tier: node.tier, leadsTo: node.leadsTo || [], badge,
         rank: progress.best[id], requirement: progression.requirementText(id, NAMES) || undefined,
         fork: node.fork ? progression.FORKS[node.fork].title : undefined,
         ...(state === 'buy' || state === 'forked' ? { locked: true, cost, afford: first || progress.memories >= cost } : state === 'locked' ? { locked: true, afford: false } : {}),
       };
     });
-    const question = first ? `So, ${memory.name} — what were you doing that day? You only get to remember one, to start.` : `So, ${memory.name} — what else were you doing that day?`;
+    const now = town ? `It's ${hhmm(town.clock)}. ` : '';
+    const question = first ? `${now}So, ${memory.name} — what were you doing that day? You only get to remember one, to start.` : `${now}So, ${memory.name} — what else were you doing that day?`;
     const id = await ui.ask(question, options, { style: 'board' });
     if (!id) continue;
+    if (id === 'wait') { await passTime(); continue; }
     if (id === 'roam' || progression.isOpen(progress, id)) return id;
     const state = first ? 'buy' : progression.stateOf(progress, id);
     if (state === 'locked') { await ui.say(`Not yet. ${progression.requirementText(id, NAMES)} first.`); continue; }
@@ -297,7 +506,7 @@ async function chooseActivity() {
       ? await ui.confirm(`${label}. That's where it started? The rest will take memories to bring back.`, 'Yes, that one', 'Let me think')
       : await ui.confirm(`${state === 'forked' ? 'That was the road you didn\'t take. ' : ''}Spend ${cost.toLocaleString()} memories to remember ${label.toLowerCase()}?`, 'Remember it', 'Not yet');
     if (!yes) continue;
-    save(first ? { ...progress, unlocked: [id] } : progression.unlock(progress, id));
+    save(first ? { ...progress, unlocked: [...progress.unlocked, id] } : progression.unlock(progress, id));
     ui.memories(progress.memories, -cost);
     if (!first) await ui.unlock({ kicker: 'REMEMBERED', title: label.toUpperCase(), text: 'It comes back all at once.' });
     return id;
@@ -342,7 +551,7 @@ async function play(id) {
   if (def.kitchen) return afterRound(id, def, await kitchenRound(def, practice, upgrades));
   const rng = createRng((Date.now() & 0xffff) + id.length * 977);
   round = def.create({
-    world, group, rng, memory, hud: ui.hud, name: memory.name, life, town, controls, progress, switchTo, talkTo, earn, scale: scale(), practice, upgrades, inspectPlace, camera,
+    passTime, roamTick, openJournal, questTarget, ride: () => player?.vehicle, world, group, rng, memory, hud: ui.hud, name: memory.name, life, town, controls, progress, switchTo, talkTo, earn, scale: scale(), practice, upgrades, inspectPlace, camera,
     found: (n) => { save(progression.found(progress, n)); },
     clock: clockText,
     // Knock a building down mid-round (rebuilds the city in ~30 ms; position and round survive).
@@ -351,18 +560,19 @@ async function play(id) {
     cash: () => (progression.rich(progress) ? Infinity : progress.cash),
   });
   mover = createMover(def.mover, { at: round.spawn.at, heading: round.spawn.heading, solids: moverSolids, anchors: world.city.anchors });
+  lastSafe.set = false; lastSafe.timer = 0;
   player = makePlayer(def);
   world.scene.add(player.root);
   timeLeft = def.time === null ? null : Number(params.get('time')) || def.time; round.timeLeft = timeLeft;
   round.addTime = (s) => { if (timeLeft !== null) timeLeft += s; };
-  ui.memories(null); showWallet();
+  ui.memories(null); showWallet(); ui.goals?.(null);
   if (town) ui.hud.clock?.(def.time === null ? clockText() : null);
   controls.yaw = round.spawn.heading; controls.pitch = -0.18;
   chase.snap(mover, controls); placePlayer(0);
   phase = 'countdown';
   ui.hud.show();
   ui.hud.set({ title: def.title, objective: round.objective, time: timeLeft, score: timeLeft === null ? null : 0 });
-  ui.hud.toast(def.controls);
+  ui.hud.toast(def.time === null ? `No clock. You're out until midnight (or press M to go back). ${def.controls}` : `${howLong(id)} on the clock — you'll finish around ${hhmm(town.clock + def.time * TIME_SCALE)}. ${def.controls}`);
   if (timeLeft !== null) for (const n of ['3', '2', '1']) await ui.hud.callout(n);
   controls.enabled = true; controls.pressed.clear();
   phase = 'play';
@@ -379,6 +589,7 @@ async function play(id) {
   world.scene.remove(player.root);
   models.disposeModel?.(player.root);
   for (const child of [...group.children]) { group.remove(child); models.disposeModel?.(child); }
+  lootModels.clear(); ui.hud.quest?.(null);
   player = null; mover = null; round = null; phase = 'cinematic';
   return afterRound(id, def, res);
 }
@@ -388,9 +599,10 @@ async function kitchenRound(def, practice, upgrades) {
   ui.memories(null); ui.wallet?.(null);   // the kitchen has its own score chip in that corner
   const people = town ? [...town.residents].sort(() => Math.random() - 0.5).slice(0, 24) : [];
   const TOPPINGS = ['pepperoni', 'mushroom', 'olive', 'basil', 'pepper'];
-  const orders = people.map((r, i) => ({ name: r.first, topping: TOPPINGS.filter((_, k) => (i * 7 + k * 3) % 5 < 2) }));
+  const orders = people.map((r, i) => ({ id: r.id, name: r.first, topping: TOPPINGS.filter((_, k) => (i * 7 + k * 3) % 5 < 2) }));
   const out = await ui.kitchen({ title: def.title, duration: Number(params.get('time')) || def.time, orders, upgrades: [...upgrades] });
   const score = Math.round(out.score * practice);
+  if (town) fame.served(town, orders.slice(0, out.served || 0).map((o) => o.id));   // everyone you fed thinks better of you
   if (out.tips) earn(Math.round(out.tips * scale() * 100) / 100);
   return { score, rank: rankFor(score, def.ranks), subtitle: out.served > out.missed * 3 ? 'Nobody left hungry.' : 'The queue got the better of you.', lines: out.lines?.length ? out.lines : [{ label: 'Served', value: String(out.served) }, { label: 'Walked out', value: String(out.missed) }] };
 }
@@ -415,6 +627,14 @@ async function afterRound(id, def, res) {
     if (kept) {
       await ui.unlock({ kicker: 'YOURS TO KEEP', title: kept.label.toUpperCase(), text: kept.text });
       if (id === 'shop' && town) givePizzeria();
+    }
+    if (town) {
+      const fans = fame.fame(town, id, res.rank);
+      if (fans) ui.hud.toast(`Word gets around: ${fans} people who love ${Object.values(fame.INTERESTS).find((x) => x.games.includes(id))?.label || 'this'} heard about it.`, 'good');
+    }
+    if (id === 'shop' && town && progression.atLeast(res.rank, 'B')) {
+      const done = quests.pizzaShift(town);
+      if (done.length) { for (const rw of done) save(progression.found(progress, rw.memories)); ui.memories(progress.memories); ui.hud.toast(`The pizza's good again — ${done.length} ${done.length > 1 ? 'people are' : 'person is'} grateful.`, 'good'); }
     }
     if (powers) await ui.unlock({ kicker: 'YOURS TO KEEP', title: powers.label.toUpperCase(), text: powers.text });
     if (hero) { save(progression.achieve(progress, 'hero')); await ui.unlock({ kicker: 'YOU DID IT', title: 'EARTH\'S MIGHTIEST HERO', text: 'The monster fell, City Hall stood, and the whole city saw you do it.' }); }
@@ -454,6 +674,31 @@ async function inspectPlace(place) {
   talking = false; controls.enabled = true; controls.pressed.clear();
 }
 
+// Letting time pass: the town runs on while you sit. Crossing midnight means the night's
+// check-in (and sleep) comes next.
+async function passTime() {
+  if (!town) return;
+  const pausing = phase === 'play';
+  if (pausing) { talking = true; controls.enabled = false; controls.release(); }
+  const h = town.hour, opts = [{ id: 'hour', label: 'An hour', hint: 'Watch the street for a while.' }];
+  if (h < 17) opts.push({ id: 'evening', label: 'Until evening', hint: 'Six o\'clock.' });
+  if (h < 21.5) opts.push({ id: 'night', label: 'Until late', hint: 'Ten at night.' });
+  opts.push({ id: 'sleep', label: 'Call it a day', hint: 'Rest now. Morning comes.' });
+  opts.push({ id: 'cancel', label: 'Never mind', hint: 'Back to it.' });
+  const pickd = await ui.ask(`It's ${clockText().split('·')[1].trim()}. How long do you want to sit?`, opts);
+  ui.hideDialogue();
+  const dayStart = Math.floor(town.clock / 86400) * 86400;
+  const target = { hour: town.clock + 3600, evening: dayStart + 18 * 3600, night: dayStart + 22 * 3600, sleep: dayStart + 86400 + 60 }[pickd];
+  if (target) {
+    await ui.fade(1, 500);
+    while (town.clock < target) town.tick(120);
+    saveTown();
+    await ui.fade(0, 600);
+  }
+  if (pausing) { talking = false; controls.enabled = true; controls.pressed.clear(); }
+  if (!pausing && town.day > town.civic.lastCheckIn) await checkIn();
+}
+
 // The night: the narrator makes you stop, goes over the day, asks what you're after, and
 // puts the day's hard calls in front of you. Then you sleep until morning.
 let dayStart = null;
@@ -469,6 +714,9 @@ async function checkIn() {
     ...(dayStart ? [{ label: 'Memories today', value: `+${Math.max(0, progress.memories - dayStart.memories).toLocaleString()}`, tone: 'good' }] : []),
     ...(mine ? [{ label: `Rent from ${mine} building${mine > 1 ? 's' : ''}`, value: `+$${rent.toFixed(2)}`, tone: rent ? 'good' : '' }] : []),
     { label: 'What the city thinks of you', value: `${Math.round((civic.approval(town) + 1) * 50)}%`, tone: civic.approval(town) >= 0 ? 'good' : 'bad' },
+    { label: 'If the vote were tonight', value: (() => { const f = civic.forecast(town); return `${f.you} for you · ${f.them} against`; })(), tone: civic.forecast(town).share >= 0.5 ? 'good' : 'bad' },
+    { label: 'Your influence (who listens to whom)', value: `${Math.round((social.influence(town) + 1) * 50)}%`, tone: social.influence(town) >= 0 ? 'good' : 'bad' },
+    ...((town.quests || []).filter((q) => q.state === 'done' && q.doneDay === town.day - 1).length ? [{ label: 'People you helped today', value: String((town.quests || []).filter((q) => q.state === 'done' && q.doneDay === town.day - 1).length), tone: 'good' }] : []),
     { label: c.mayor === 'player' ? 'You are the mayor' : `Mayor: ${town.person(c.mayor)?.name}`, value: `election in ${Math.max(0, civic.daysToElection(town))} days`, tone: '' },
     ...(progress.goal ? [{ label: GOALS.find((g) => g.id === progress.goal).label, progress: goals[progress.goal], value: `${Math.round(goals[progress.goal] * 100)}%` }] : []),
   ];
@@ -520,6 +768,39 @@ const GOALS = [
   { id: 'hero', label: 'Earth\'s mightiest hero', hint: 'Fight crime, beat the invaders, stop what comes after.', glyph: 'hero', colour: '#3fb37f', reply: 'A hero. Then start on the streets, and don\'t stop when the sky turns strange.' },
 ];
 
+// The game in progress (which day is being remembered), so Continue can come back to it.
+const CURRENT_KEY = 'remind-me-current';
+const saveCurrent = () => { try { localStorage.setItem(CURRENT_KEY, JSON.stringify(memory)); } catch { /* storage unavailable */ } };
+const loadCurrent = () => { try { const m = JSON.parse(localStorage.getItem(CURRENT_KEY) || 'null'); return m?.city && m?.time ? m : null; } catch { return null; } };
+function forgetEverything() { try { for (const k of Object.keys(localStorage)) if (k.startsWith('remind-me-')) localStorage.removeItem(k); } catch { /* storage unavailable */ } progress = progression.fresh(); }
+
+// New Game: one page with every choice, the city behind it changing as you pick.
+async function newGame() {
+  if (!ui.worldSetup) return remember();
+  const weather = Object.fromEntries(SEASON_CHOICES.map((s) => [s.id, weatherChoices(s.id)]));
+  const defaults = { city: 'nyc', year: '2000', season: 'summer', weather: 'heat', time: 'noon', name: '' };
+  const preview = (st) => { forgetLife(); memory = { ...st, name: st.name || 'You' }; rebuild({ preview: true }); };
+  preview(defaults);
+  const picked = await ui.worldSetup({ options: { city: CITIES, year: YEARS, season: SEASON_CHOICES, weather, time: TIME_CHOICES }, defaults, onChange: preview });
+  if (!picked) return null;
+  forgetLife();
+  memory = { ...picked, name: picked.name?.trim() || 'Kid' };
+  rebuild(); saveCurrent();
+  await ui.say(`${CITIES.find((c) => c.id === memory.city).label}, ${memory.year}. ${LINES.weather[memory.weather]} ${LINES.time[memory.time]}`);
+  await ui.say(LINES.dayLength[memory.time]);
+  return memory;
+}
+
+// The Tutorial: the original remembering, with the narrator teaching as it goes.
+async function tutorial() {
+  await remember();
+  saveCurrent();
+  await ui.say('One more thing, while you\'re still waking up. Three things matter in this city: owning a piece of it, being trusted enough to run it, and the powers you\'ll find you have.');
+  await ui.say('Every activity takes time out of your day, and earns memories. Memories bring back more of what you did. Cash buys upgrades, and buildings.');
+  await ui.say('The people here remember you. Help them — they each need something — and they\'ll tell their friends. Ignore them and they\'ll forget you. The important ones are busy; get to know the people around them first.');
+  await ui.say('In the city: E to talk to someone or look at a building, J for your journal, T to let time pass, M to come back here. Now — where did the day start?');
+}
+
 async function main() {
   const given = params.get('memory')?.split(',');
   if (given?.length === 6) {
@@ -531,11 +812,27 @@ async function main() {
     if (params.get('cash')) save(progression.earn(progress, Number(params.get('cash'))));
     if (keep.length) save({ ...progress, kept: [...new Set([...progress.kept, ...keep.filter((g) => progression.PERKS[g])])] });
     rebuild(); await ui.fade(0, 400);
-  } else await remember();
+  } else {
+    // The title screen, over a slow pass of a remembered city.
+    const current = loadCurrent();
+    memory = current || { city: 'nyc', year: '2000', season: 'autumn', weather: 'clear', time: 'dusk', name: '' };
+    rebuild({ preview: true }); await ui.fade(0, 900);
+    for (;;) {
+      const choice = ui.title ? await ui.title({ canContinue: !!current, continueLabel: current && `${CITIES.find((c) => c.id === current.city)?.label}, ${current.year} · ${current.name}` }) : 'tutorial';
+      if (choice === 'continue' && current) { forgetLife(); memory = current; rebuild(); break; }
+      if (choice === 'new') {
+        if (current && !(await ui.confirm('Start a new life in a new city? Everything you\'ve remembered so far will be forgotten.', 'Start over', 'Go back'))) continue;
+        forgetEverything();
+        if (await newGame()) break;
+        continue;
+      }
+      if (choice === 'tutorial') { if (current) forgetEverything(); await tutorial(); break; }
+    }
+  }
   phase = 'cinematic';
   let action = 'other', id = null;
   for (;;) {
-    if (action === 'new') { await ui.fade(1, 900); await remember(); }
+    if (action === 'new') { await ui.fade(1, 900); forgetLife(); await newGame() || await remember(); saveCurrent(); }
     if (action !== 'again') id = params.get('play') && !id ? params.get('play') : await chooseActivity();
     action = await play(id);
   }
@@ -544,4 +841,4 @@ async function main() {
 main();
 
 // Read-only handle for poking at a running game from the console.
-if (import.meta.env.DEV) window.__rm = { get mover() { return mover; }, get life() { return life; }, get round() { return round; }, get progress() { return progress; }, get town() { return town; } };
+if (import.meta.env.DEV) window.__rm = { get mover() { return mover; }, get life() { return life; }, get round() { return round; }, get progress() { return progress; }, get town() { return town; }, get controls() { return controls; } };

@@ -7,6 +7,8 @@ import { createUI } from './ui.js';
 // Town pieces: talk (stranger -> reply flip -> friend -> broke and hungry; &who=stranger|friend|broke shows one card and stays open,
 // &mood= &seed= &op= override it), wallet (&stack=1 adds the HUD and memories chips, &inf=1 starts on ∞), clock (&timer=1 runs a timer too),
 // town (roam HUD + wallet + clock, then a friend walks up).
+// Front of house: title (&new=1 hides Continue), setup (logs onChange; &weather=snow style defaults via &season=), goals (&hud=1 stacks it
+// with the HUD, memories and wallet chips), journal, quest (&hud=1 also shows the tracked-quest line), talkflip (a pick, then two quick replies).
 // ?root=body mounts on document.body, the way the game does.
 const params = new URLSearchParams(location.search);
 const ui = createUI(params.get('root') === 'body' ? document.body : document.getElementById('ui'));
@@ -160,6 +162,7 @@ const scenes = {
   },
   async board12() {
     if (mem) ui.memories(mem);
+    if (params.has('goals')) ui.goals([{ id: 'land', label: 'Own the city', value: 0.12, detail: '2 of 12 buildings' }, { id: 'mayor', label: 'Become Mayor', value: 0.4 }, { id: 'powers', label: 'Earth’s mightiest', value: 0.8 }]);
     const id = await ui.ask('Remind me — which road were you on?', board12(mem), { style: 'board' });
     log('board12 →', id);
     ui.hideDialogue();
@@ -264,6 +267,79 @@ const scenes = {
     log('kitchen →', JSON.stringify(res));
     ui.hideDialogue();
     await ui.results({ title: 'Pizza shop rush', subtitle: `${res.served} pizzas out the door.`, score: res.score, rank: res.score >= 5500 ? 'S' : res.score >= 4200 ? 'A' : res.score >= 3000 ? 'B' : 'C', lines: res.lines, actions: [{ id: 'again', label: 'Another shift' }] });
+  },
+  async title() {
+    const id = await ui.title({ canContinue: !params.has('new'), continueLabel: 'New York City, 2000 · Day 4 · Harrison' });
+    log('title →', id);
+  },
+  async setup() {
+    const L = (a) => a.map((id) => ({ id, label: id.charAt(0).toUpperCase() + id.slice(1) }));
+    const options = {
+      city: [{ id: 'nyc', label: 'New York City' }, { id: 'tokyo', label: 'Tokyo' }],
+      year: ['1900', '2000', '2100'].map((id) => ({ id, label: id })),
+      season: L(['spring', 'summer', 'autumn', 'winter']),
+      weather: { spring: L(['clear', 'rain', 'fog']), summer: L(['clear', 'rain', 'fog']), autumn: L(['clear', 'rain', 'fog']), winter: L(['clear', 'snow', 'fog']) },
+      time: L(['dawn', 'noon', 'dusk', 'midnight']),
+    };
+    const res = await ui.worldSetup({
+      options,
+      defaults: { city: 'nyc', year: '2000', season: params.get('season') || 'summer', weather: params.get('weather') || 'rain', time: 'dusk', name: params.get('name') ?? '' },
+      onChange: (st) => log('change', JSON.stringify(st)),
+    });
+    log('setup →', JSON.stringify(res));
+  },
+  async goals() {
+    const base = [
+      { id: 'land', label: 'Own the city', value: 0.12, detail: '2 of 12 buildings' },
+      { id: 'mayor', label: 'Become Mayor', value: 0.4, detail: '62% approval' },
+      { id: 'powers', label: 'Earth’s mightiest', value: 1, detail: 'All seven powers' },
+    ];
+    ui.goals(base);
+    if (params.has('hud')) {
+      ui.memories(2450);
+      ui.wallet(1240);
+      ui.hud.show();
+      ui.hud.set({ title: 'Just wander', objective: 'Walk the town. Talk to anyone.', score: null, time: null });
+      ui.hud.quest('Deliver 3 pizzas to Rosa · 2:10 PM');
+      ui.hud.meter('Fare', 0.6);
+      ui.hud.clock('DAY 4 · 6:40 PM');
+    }
+    log('goals up');
+    let k = 0;
+    const timer = setInterval(() => { k += 1; ui.goals(base.map((g, i) => (g.value < 1 ? { ...g, value: Math.min(1, g.value + 0.05 * (i + 1) * (k % 3 ? 1 : 0)) } : g))); }, 1500);
+    window.__stopHud = () => clearInterval(timer);
+  },
+  async journal() {
+    await ui.journal({
+      quests: [
+        { id: 'q1', who: 'Rosa Flanagan', title: 'Three loaves by noon', detail: 'The bakery is short a driver. Take bread to the diner, the school and the docks.', reward: '$60 + 300 memories', state: 'active', due: 'Day 4 · 12:00 PM' },
+        { id: 'q2', who: 'Dmitri Okonkwo-Reyes', title: 'Eleven days behind', detail: 'He says the docks cut his shifts. Decide what to do about the rent.', reward: 'His trust', state: 'active', due: 'Day 5 · 9:00 AM' },
+        { id: 'q3', who: 'Marco Rivera', title: 'A lost wallet', detail: 'Last seen on Bleecker, under a mailbox.', reward: '$25', state: 'done' },
+        { id: 'q4', who: 'Keisha Johnson', title: 'Fix the awning', detail: 'It came down in the rain. She found someone else.', reward: '$40', state: 'failed' },
+      ],
+      collectibles: [{ label: 'Little memories', found: 37, total: 60 }, { label: 'Street art', found: 4, total: 12 }, { label: 'Pigeons fed', found: 9, total: 9 }, { label: 'Rooftops', found: 0, total: 8 }],
+    });
+    log('journal closed');
+  },
+  async quest() {
+    if (params.has('hud')) {
+      ui.hud.show();
+      ui.hud.set({ title: 'Just wander', objective: 'Walk the town.', score: null, time: null });
+      ui.hud.quest('Deliver 3 pizzas to Rosa · 2:10 PM');
+    }
+    const id = await ui.quest({
+      who: 'Rosa Flanagan', portraitSeed: 41, title: 'Three loaves by noon',
+      detail: 'The bakery is short a driver. Take bread to the diner, the school and the docks before the lunch rush.',
+      reward: ['$60', '300 memories'],
+    });
+    log('quest →', id);
+  },
+  async talkflip() {
+    const view = { name: 'Rosa Flanagan', job: 'Baker', place: 'Rossi’s Bakery', mood: 'fine', money: 214.5, opinion: null, portraitSeed: 41, line: 'Morning. The bread’s still warm, if you’re buying.', facts: ['Lives on 4th & 23rd'], options: [{ id: 'a', label: 'Say hello' }, { id: 'b', label: 'Buy a loaf', hint: '$4.00' }] };
+    const id = await ui.talk(view);
+    log('talkflip pick →', id);
+    ui.talk({ ...view, line: 'First answer, replaced at once.', mood: 'tired' });
+    ui.talk({ ...view, line: 'Second answer: the one you should read.', mood: 'happy', opinion: 0.4, options: [{ id: 'c', label: 'Goodbye' }] });
   },
   async memories() {
     ui.memories(1200);

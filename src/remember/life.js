@@ -51,7 +51,7 @@ const listInsert = (list, v) => { let i = list.length; while (i > 0 && list[i - 
 const listRemove = (list, v) => { const i = list.indexOf(v); if (i >= 0) list.splice(i, 1); };
 const headingOf = (dx, dz) => Math.atan2(-dx, -dz);
 
-export function createLife({ era = '2000', city = 'nyc', rng = createRng(1), density = 1, town = null } = {}) {
+export function createLife({ era = '2000', city = 'nyc', rng = createRng(1), density = 1, crowd = density, town = null } = {}) {   // crowd scales people only
   const left = city === 'tokyo', G = buildGraph({ left }), S = G.walk;
   const group = new THREE.Group();
   group.name = 'life';
@@ -619,7 +619,7 @@ export function createLife({ era = '2000', city = 'nyc', rng = createRng(1), den
   // --- Residents: the town's outdoor people get bodies near the player -----------------------
   const resPeds = new Map(), spare = [], PLP = { x: 0, z: 0 }, NG = {};
   const parkEdges = S.edges.filter((e) => e.kind === 'park');
-  const cap = Math.round(comp.peds * density), minCrowd = Math.round(MIN_CROWD * density), staticCap = Math.round(cap * 0.4);   // standing workers never crowd out walkers
+  const cap = Math.round(comp.peds * crowd), minCrowd = Math.round(MIN_CROWD * density), staticCap = Math.round(cap * 0.4);   // standing workers never crowd out walkers
   let trackT = 0, evictT = 0;
   function disembody(p, why = 'range') {
     p.gone = why;
@@ -704,7 +704,7 @@ export function createLife({ era = '2000', city = 'nyc', rng = createRng(1), den
       const spot = spotFor(o, force);
       if (!spot) continue;
       const seen = (spot.x - PL.x) ** 2 + (spot.z - PL.z) ** 2 < seeable;   // the cap is for bodies you can see
-      if (seen ? resNear >= cap : resFar >= cap) continue;
+      if (seen ? resNear >= cap : resNear + resFar >= cap) continue;   // one budget, nearest first: the out-of-sight band only gets what's left
       if (!p) { if (creates <= 0) continue; creates--; p = newPed(o.resident.look.seed, id, o.resident); resPeds.set(id, p); }
       embody(p, spot.edge, spot.s, spot.emerge, !force);
       p.seen = true; if (seen) resNear++; else resFar++; if (stat) statics++;

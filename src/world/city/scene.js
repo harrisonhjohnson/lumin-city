@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { PALETTE, SKY, KIT, WORLD, WINDOW } from './bible.js';
 import { buildCity } from './build.js';
 import { makeWater } from './water.js';
+import { skyColours, makeSky, makeSea, makeHarbours, makeFarShores } from './horizon.js';
 import { DEFAULT_LOOK, GLOW, paletteFor, lookFor } from './looks.js';
 import { DEFAULT_TIME, DEFAULT_WEATHER, timeFor, weatherFor } from './conditions.js';
 
@@ -26,6 +27,10 @@ export function buildManhattan({ overrides = {}, look = DEFAULT_LOOK, time = DEF
   if (glow) scene.background.lerp(new THREE.Color(glow[0]), glow[2] ?? glow[1]);
   if (Wx.sky) { fogColour.lerp(new THREE.Color(Wx.sky[0]), Wx.sky[1] * (1 - T.lit)); scene.background.lerp(new THREE.Color(Wx.sky[0]), Wx.sky[1] * (1 - T.lit)); }
   scene.fog = new THREE.FogExp2(fogColour, T.fogDensity * Wx.fog);
+  // The sky is a gradient dome (horizon = fog colour, zenith = the old flat sky colour pushed deeper); the clear colour is the horizon.
+  const sky = skyColours(scene.background, fogColour);
+  scene.background = sky.horizon;
+  scene.add(makeSky(sky));
   scene.add(new THREE.HemisphereLight(...T.hemi));
   const sun = new THREE.DirectionalLight(new THREE.Color(T.sun[0]).lerp(new THREE.Color(0xffd29a), Wx.heat || 0), T.sun[1] * (Wx.particles || Wx.fog > 1 ? 0.7 : 1) * (1 + (Wx.heat || 0))); sun.position.set(...T.sun[2]); scene.add(sun);
 
@@ -68,20 +73,31 @@ export function buildManhattan({ overrides = {}, look = DEFAULT_LOOK, time = DEF
   }, undefined, () => { /* stand-ins stay */ });
 
   // Manhattan is an island: ground between the two shorelines, the Hudson west of the bridge
-  // tower, the East River past the last avenue.
-  const [west, east] = SHORE, zMid = (WORLD.z[0] + WORLD.z[1]) / 2;
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(east - west, 1000), mat('asphalt'));
+  // tower, the East River past the last avenue. Past its tips and the rivers' far edges the water
+  // goes on to the horizon (horizon.js), with the far banks across each river.
+  const [west, east] = SHORE, zMid = (WORLD.z[0] + WORLD.z[1]) / 2, half = ISLAND_LENGTH / 2, riverDepth = 1400, riverWidth = 700;
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(east - west, ISLAND_LENGTH), mat('asphalt'));
   ground.rotation.x = -Math.PI / 2; ground.position.set((west + east) / 2, -0.03, zMid); scene.add(ground);
-  const rivers = [[west - 700, west, 1], [east, east + 700, -1]].map(([from, to, quay]) => {
-    const river = makeWater({
-      width: to - from, depth: 1400, quay, colour: palette.water, fogColour, skyColour: scene.background, weather: Wx, lit: T.lit, glow: glow?.[0],
-      sunDirection: sun.position, sunColour: sun.color.clone().multiplyScalar(sun.intensity), hemi: T.hemi,
-    });
+  const light = {
+    colour: palette.water, fogColour, skyColour: sky.zenith, weather: Wx, lit: T.lit, glow: glow?.[0],
+    sunDirection: sun.position, sunColour: sun.color.clone().multiplyScalar(sun.intensity), hemi: T.hemi,
+  };
+  const waters = [[west - riverWidth, west, 1], [east, east + riverWidth, -1]].map(([from, to, quay]) => {
+    const river = makeWater({ ...light, width: to - from, depth: riverDepth, quay });
     river.mesh.position.set((from + to) / 2, -0.2, zMid); scene.add(river.mesh);
     return river;
   });
-  const quay = (x) => { const m = new THREE.Mesh(unit, mat('stone')); m.position.set(x, -0.1, zMid); m.scale.set(3, 0.5, 1000); scene.add(m); };
-  quay(west); quay(east);
+  const harbours = makeHarbours(light, { span: east - west, north: zMid - half, south: zMid + half });
+  const sea = makeSea(light, { x: [-2000, 2000], z: [zMid - 2300, zMid + 2300], foci: { x: [west - riverWidth, west, east, east + riverWidth], z: [zMid - half, zMid + half, zMid - riverDepth / 2, zMid + riverDepth / 2] } });
+  for (const w of [...harbours, sea]) scene.add(w.mesh);
+  waters.push(...harbours, sea);
+  for (const m of makeFarShores({ palette, look, fog: fogColour, lit: T.lit, shore: east, zMid })) scene.add(m);
+  // Stone quays: the two long sides run as far as the rivers do, the cross walls close the tips.
+  const walls = [[west, 0, 3, riverDepth], [east, 0, 3, riverDepth], [0, -half, east - west - 3, 3], [0, half, east - west - 3, 3]];
+  const quays = new THREE.InstancedMesh(unit, mat('stone'), walls.length);
+  walls.forEach(([x, z, w, d], i) => { dummy.position.set(x, -0.1, zMid + z); dummy.rotation.set(0, 0, 0); dummy.scale.set(w, 0.5, d); dummy.updateMatrix(); quays.setMatrixAt(i, dummy.matrix); });
+  quays.computeBoundingSphere(); scene.add(quays);
+  unit.addEventListener('dispose', () => quays.dispose());   // disposeScene frees geometry only; this frees the instance buffer
   const bw = city.broadway, dx = bw.to[0] - bw.from[0], dz = bw.to[1] - bw.from[1];
   const broadway = new THREE.Mesh(unit, mat('paintYellow'));
   broadway.position.set((bw.from[0] + bw.to[0]) / 2, 0.025, (bw.from[1] + bw.to[1]) / 2);
@@ -100,7 +116,7 @@ export function buildManhattan({ overrides = {}, look = DEFAULT_LOOK, time = DEF
 
   return {
     scene, route, rings, city, look, time, weather,
-    tick: (dt, camera) => { for (const r of rivers) r.tick(dt); precip?.tick(dt, camera.position); steam?.tick(dt, camera); },
+    tick: (dt, camera) => { for (const w of waters) w.tick(dt); precip?.tick(dt, camera.position); steam?.tick(dt, camera); },
     buildings: city.buildings,
     anchors: city.anchors.map((a) => new THREE.Vector3(a[0], a[1], a[2])),
     start: new THREE.Vector3(...city.start),
@@ -111,6 +127,7 @@ const FACADE = /^facade\d$/;
 // West and east edges of the island, x: past the outer avenues (±280, three lanes ±12 m) so the
 // perimeter highways have land under them, like the West Side Highway and the FDR.
 const SHORE = [-305, 305];
+const ISLAND_LENGTH = 1000;   // the ground's run in z; rig.js ISLAND mirrors it
 
 // Facade walls paint their own windows: the grid comes from WINDOW (the same numbers the
 // boxes used to be placed with), lit or dark per window from a hash of its cell and the

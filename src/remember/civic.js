@@ -94,7 +94,7 @@ export function tenantChoice(town, residentId) {
 export function resolveTenant(town, residentId, choice) {
   const r = town.person(residentId), c = town.civic, owed = r.rent + (c.debts[r.id] || 0);
   const ripple = (d) => { for (const f of r.friends) { const p = town.person(f); if (p) p.opinion = clamp(p.opinion + d, -1, 1); } };
-  if (choice === 'forgive') { delete c.debts[r.id]; r.opinion = clamp(r.opinion + 0.4, -1, 1); ripple(0.1); town.note(r, 'My landlord let my rent go'); return 0; }
+  if (choice === 'forgive') { r.kindness = Math.min(2, (r.kindness || 0) + 1); delete c.debts[r.id]; r.opinion = clamp(r.opinion + 0.4, -1, 1); ripple(0.1); town.note(r, 'My landlord let my rent go'); return 0; }
   if (choice === 'wait') { c.debts[r.id] = owed; r.opinion = clamp(r.opinion + 0.15, -1, 1); town.note(r, 'Got a week to find the rent'); return 0; }
   if (choice !== 'evict') return 0;
   // Evicted: they move into a building someone else owns and remember it.
@@ -190,18 +190,26 @@ export function decide(town, decisionId, optionId) {
 export const daysToElection = (town) => town.civic.nextElection - town.day;
 // Everyone votes. They vote for you if they like you more than they like the other candidate;
 // a sitting mayor's record (approval) counts for or against them.
-export function election(town) {
+// How everyone would vote right now. The forecast and the election use the same count.
+export function tally(town) {
   const c = town.civic, youIn = c.mayor === 'player';
   const other = town.person(c.rival) || town.residents[0];
   const record = youIn ? approval(town) : 0;
-  let you = 0, them = 0, stay = 0;
+  let you = 0, them = 0;
   for (const r of town.residents) {
-    const noise = ((hash(r.id + town.day) % 1000) / 1000 - 0.5) * 0.3;
+    const noise = ((hash(r.id + c.nextElection) % 1000) / 1000 - 0.5) * 0.3;
     const forYou = r.opinion + (youIn ? record * 0.5 : 0) + noise;
-    const forThem = (r.id === other.id ? 1 : 0.12 + (other.friends.includes(r.id) ? 0.4 : 0) + (youIn ? 0 : 0.05)) - (r.traits.sociable < 0.2 ? 0.2 : 0);
-    if (r.needs.energy < 0.1 && r.traits.diligent < 0.3) { stay++; continue; }
+    const forThem = (r.id === other.id ? 1 : 0.2 + (other.friends.includes(r.id) ? 0.4 : 0) + (youIn ? 0 : 0.05)) - (r.traits.sociable < 0.2 ? 0.2 : 0);
+    if (r.needs.energy < 0.1 && r.traits.diligent < 0.3) continue;
     if (forYou > forThem) you++; else them++;
   }
+  return { you, them, other };
+}
+export const forecast = (town) => { const { you, them } = tally(town); return { you, them, share: you / Math.max(1, you + them) }; };
+
+export function election(town) {
+  const c = town.civic, youIn = c.mayor === 'player';
+  const { you, them, other } = tally(town);
   const won = you > them;
   c.nextElection = town.day + ELECTION_EVERY;
   c.running = false;
@@ -222,7 +230,7 @@ export function goalProgress(town, progress) {
   const homes = town.places.filter((p) => p.kind === 'home').length;
   const mine = owned(town).filter((id) => town.place(id)?.kind === 'home').length;
   return {
-    mayor: town.civic.mayor === 'player' ? 1 : clamp((approval(town) + 0.2) / 0.8, 0, 0.95),
+    mayor: town.civic.mayor === 'player' ? 1 : clamp(forecast(town).share / 0.5, 0, 0.95),   // a full meter is a majority on tonight's forecast
     owner: clamp(mine / (homes * OWN_SHARE), 0, 1),
     hero: progress.achieved.includes('hero') ? 1 : (progress.best.kaiju ? 0.8 : progress.powers.includes('laser') ? 0.6 : progress.best.aliens ? 0.4 : progress.best.patrol ? 0.2 : 0),
   };

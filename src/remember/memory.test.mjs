@@ -40,7 +40,7 @@ test('every season offers two weathers the city can draw', () => {
 });
 
 test('activities map to movers and ranks are ordered', () => {
-  assert.equal(ACTIVITIES.length, 10);
+  assert.equal(ACTIVITIES.length, 11);
   assert.ok(Object.keys(MOVERS).length >= 6);
   assert.equal(rankFor(9999, [4, 3, 2, 1]), 'S');
   assert.equal(rankFor(0, [4, 3, 2, 1]), 'D');

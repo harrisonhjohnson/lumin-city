@@ -6,9 +6,9 @@ const total = (t) => t.residents.reduce((n, r) => n + r.money, 0);
 
 test('the same day always has the same people', () => {
   const a = createTown({ city: 'nyc', era: '2000' }), b = createTown({ city: 'nyc', era: '2000' });
-  assert.equal(a.residents.length, 240);
+  assert.equal(a.residents.length, 600);
   assert.deepEqual(a.residents.map((r) => r.name), b.residents.map((r) => r.name));
-  assert.equal(new Set(a.residents.map((r) => r.id)).size, 240);
+  assert.equal(new Set(a.residents.map((r) => r.id)).size, 600);
   assert.notDeepEqual(createTown({ city: 'tokyo', era: '1900' }).residents[0].name, a.residents[0].name);
 });
 
@@ -57,4 +57,15 @@ test('a cab ride: hailed, carried, dropped off where they were going', () => {
   assert.equal(r.act.kind, 'ride');
   t.dropOff(r, dest);
   assert.notEqual(r.act.kind, 'ride');
+});
+
+test('a town saved with fewer people grows to the full roster, keeping everyone it had', () => {
+  const t = createTown({ hour: 9 });
+  const old = JSON.parse(JSON.stringify(t.save()));
+  old.residents = old.residents.slice(0, 240);
+  old.residents[5].opinion = 0.9;
+  const u = createTown({ saved: old, hour: 9 });
+  assert.equal(u.residents.length, 600);
+  assert.equal(u.residents[5].opinion, 0.9);
+  assert.equal(new Set(u.residents.map((r) => r.id)).size, 600);
 });

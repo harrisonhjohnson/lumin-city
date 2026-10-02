@@ -6,6 +6,7 @@ const star = (cx, cy, R, r, n = 5) => Array.from({ length: n * 2 }, (_, i) => {
   return `${(cx + d * Math.cos(a)).toFixed(1)},${(cy + d * Math.sin(a)).toFixed(1)}`;
 }).join(' ');
 
+const star8 = () => star(48, 48, 44, 22, 8);
 const svg = (body) => `<svg viewBox="0 0 96 96" aria-hidden="true" focusable="false">${body}</svg>`;
 
 const GLYPHS = {
@@ -281,6 +282,36 @@ const ktLayer = (id, k = 0) => {
 };
 const KT_OVEN = '<svg viewBox="0 0 120 110" aria-hidden="true" focusable="false" fill="none" stroke="#1b1a17" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M44 4H64V30H44Z" fill="#c8955a"/><path d="M8 104V58Q8 20 60 20Q112 20 112 58V104Z" fill="#c2562b"/><path d="M8 80H112M8 92H112M24 62V80M44 52V80M64 50V80M84 52V80M100 62V80M16 80V92M36 80V92M56 80V92M76 80V92M96 80V92" stroke-width="2.2"/><path d="M26 104V74Q26 48 60 48Q94 48 94 74V104Z" fill="#1b1a17"/><g class="rm-kt-fire"><path d="M38 104Q30 88 46 76Q46 88 54 84Q60 92 66 104Z" fill="#e9b23a"/><path d="M52 104Q52 94 60 88Q70 94 70 104Z" fill="#e0322b" stroke-width="2.6"/><path d="M68 104Q66 94 76 88Q84 96 82 104Z" fill="#e9b23a" stroke-width="3"/></g></svg>';
 
+// World setup tiles: one little drawing and one accent colour per answer you can give.
+const sIc = (b) => `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false" fill="none" stroke="#1b1a17" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${b}</svg>`;
+const SETUP_ICON = {
+  nyc: sIc('<path d="M4 42V25H13V42ZM13 42V10L21 6V42ZM21 42V18H31V42ZM31 42V29H44V42Z" fill="#c9bfa6"/><path d="M17 6V2M3 42H45M36 29V24M40 29V24"/><path d="M24 24H28M24 30H28" stroke-width="2"/>'),
+  tokyo: sIc('<path d="M3 9Q24 17 45 9V16Q24 24 3 16Z" fill="#e0322b"/><path d="M13 20V43M35 20V43M9 28H39"/>'),
+  1900: sIc('<path d="M24 3L35 12H13Z" fill="#2a2a38"/><path d="M16 12H32V28H16Z" fill="#f7dc78"/><path d="M24 28V43M16 43H32M20 16V24" stroke-width="2.4"/>'),
+  2000: sIc('<rect x="10" y="6" width="28" height="36" rx="4" fill="#a9d6e5"/><rect x="14" y="10" width="20" height="11" fill="#f8f4ea" stroke-width="2"/><circle cx="17" cy="29" r="2.4" fill="#1b1a17" stroke="none"/><circle cx="24" cy="29" r="2.4" fill="#1b1a17" stroke="none"/><circle cx="31" cy="29" r="2.4" fill="#1b1a17" stroke="none"/><circle cx="17" cy="36" r="2.4" fill="#1b1a17" stroke="none"/><circle cx="24" cy="36" r="2.4" fill="#1b1a17" stroke="none"/>'),
+  2100: sIc('<ellipse cx="24" cy="30" rx="20" ry="8" fill="#8fb2dc"/><path d="M13 28Q13 12 24 12Q35 12 35 28Z" fill="#cfe0ea"/><circle cx="12" cy="32" r="2.2" fill="#e9b23a" stroke-width="2"/><circle cx="24" cy="35" r="2.2" fill="#e9b23a" stroke-width="2"/><circle cx="36" cy="32" r="2.2" fill="#e9b23a" stroke-width="2"/><path d="M16 42L12 46M32 42L36 46M24 42V46" stroke-width="2.4"/>'),
+  spring: sIc('<path d="M24 28V44M24 38Q32 36 34 30" stroke-width="2.6"/><circle cx="24" cy="10" r="7" fill="#f2a1b8"/><circle cx="35" cy="18" r="7" fill="#f2a1b8"/><circle cx="31" cy="30" r="7" fill="#f2a1b8"/><circle cx="17" cy="30" r="7" fill="#f2a1b8"/><circle cx="13" cy="18" r="7" fill="#f2a1b8"/><circle cx="24" cy="21" r="6" fill="#e9b23a"/>'),
+  summer: sIc('<circle cx="24" cy="24" r="10" fill="#f7dc78"/><path d="M24 4V9M24 39V44M4 24H9M39 24H44M10 10L13.5 13.5M34.5 34.5L38 38M38 10L34.5 13.5M13.5 34.5L10 38"/>'),
+  autumn: sIc('<path d="M24 5Q41 13 39 30Q35 41 24 43Q13 41 9 30Q7 13 24 5Z" fill="#e8762c"/><path d="M24 12V45M24 24L33 18M24 32L15 26" stroke-width="2.4"/>'),
+  winter: sIc('<path d="M24 4V44M6.7 14L41.3 34M6.7 34L41.3 14"/><path d="M18 6L24 12L30 6M18 42L24 36L30 42M5 22L12 20L11 13M43 26L36 28L37 35M5 26L12 28L11 35M43 22L36 20L37 13" stroke-width="2.4"/>'),
+  clear: sIc('<circle cx="24" cy="24" r="9" fill="#f7dc78"/><path d="M24 6V11M24 37V42M6 24H11M37 24H42M11 11L14.5 14.5M33.5 33.5L37 37M37 11L33.5 14.5M14.5 33.5L11 37" stroke-width="2.6"/>'),
+  rain: sIc('<path d="M12 28Q6 28 6 21Q6 15 13 15Q15 7 24 7Q33 7 34 15Q42 15 42 22Q42 28 35 28Z" fill="#cfe0ea"/><path d="M14 33L11 41M24 33L21 41M34 33L31 41" stroke="#2f66b0" stroke-width="3.2"/>'),
+  fog: sIc('<path d="M12 24Q6 24 6 17Q6 11 13 11Q15 4 24 4Q33 4 34 11Q42 11 42 18Q42 24 35 24Z" fill="#d8d8d2"/><path d="M8 31H40M13 37H35M8 43H30" stroke-width="3.2"/>'),
+  snow: sIc('<path d="M12 26Q6 26 6 19Q6 13 13 13Q15 5 24 5Q33 5 34 13Q42 13 42 20Q42 26 35 26Z" fill="#eef4f8"/><circle cx="13" cy="34" r="2.6" fill="#1b1a17" stroke="none"/><circle cx="24" cy="38" r="2.6" fill="#1b1a17" stroke="none"/><circle cx="35" cy="34" r="2.6" fill="#1b1a17" stroke="none"/><circle cx="19" cy="44" r="2" fill="#1b1a17" stroke="none"/><circle cx="31" cy="44" r="2" fill="#1b1a17" stroke="none"/>'),
+  dawn: sIc('<path d="M6 34H42M10 28Q24 8 38 28Z" fill="#f2a93b"/><path d="M24 4V10M8 14L12 18M40 14L36 18M4 24H9M39 24H44" stroke-width="2.6"/><path d="M12 40H36" stroke-width="2.6"/>'),
+  noon: sIc('<circle cx="24" cy="24" r="12" fill="#f7dc78"/><path d="M24 3V8M24 40V45M3 24H8M40 24H45M9 9L12.5 12.5M35.5 35.5L39 39M39 9L35.5 12.5M12.5 35.5L9 39" stroke-width="2.8"/>'),
+  dusk: sIc('<path d="M5 36H43M10 30Q24 12 38 30Z" fill="#e8762c"/><path d="M8 42H40M16 46H32" stroke-width="2.6"/><path d="M24 8V13M10 16L13 19M38 16L35 19" stroke-width="2.4"/>'),
+  midnight: sIc('<path d="M32 6Q16 8 16 26Q16 40 32 42Q20 44 12 34Q4 22 14 12Q22 4 32 6Z" fill="#f7dc78"/><path d="M36 10L38 15L43 17L38 19L36 24L34 19L29 17L34 15Z" fill="#f8f4ea" stroke-width="2"/><circle cx="40" cy="34" r="2" fill="#f8f4ea" stroke-width="2"/>'),
+};
+const SETUP_COLOUR = {
+  nyc: '#c9bfa6', tokyo: '#e2796f', 1900: '#d8b46c', 2000: '#8fc3d6', 2100: '#8fa2dc',
+  spring: '#f2b8c8', summer: '#f7dc78', autumn: '#eba061', winter: '#cfe0ea',
+  clear: '#f7dc78', rain: '#9fbfdc', fog: '#d8d8d2', snow: '#e8eff4',
+  dawn: '#f6c28a', noon: '#f7dc78', dusk: '#e9916a', midnight: '#8c8bc4',
+};
+const setupIcon = (id) => SETUP_ICON[id] || sIc('<path d="M24 5L43 24L24 43L5 24Z" fill="#e9b23a"/><path d="M24 15V33M15 24H33" stroke-width="2.6"/>');
+const SETUP_NAMES = ['Kid', 'Sam', 'Mo', 'Jo', 'Rue', 'Nico', 'Pip', 'Wren', 'Ace', 'Lou', 'Remy', 'Tess'];
+
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -370,6 +401,7 @@ export function createUI(root) {
         <div class="rm-hud-sub">
           <div class="rm-hud-obj" hidden><span></span></div>
           <div class="rm-meter" role="meter" aria-valuemin="0" aria-valuemax="100" hidden><span class="rm-meter-k"></span><span class="rm-meter-bar"><i></i></span></div>
+          <div class="rm-hud-quest" hidden><i></i><span></span></div>
         </div>
       </div>
       <div class="rm-hud-tc">
@@ -393,6 +425,8 @@ export function createUI(root) {
       <div class="rm-wal-chip"><i>$</i><div><small>Wallet</small><b>$0</b></div></div>
       <span class="rm-sr" role="status"></span>
     </div>
+    <div class="rm-goals" role="group" aria-label="Life goals"><ul></ul></div>
+    <i class="rm-goals-probe" aria-hidden="true"></i>
     <div class="rm-toasts" role="status" aria-live="polite"></div>
     <div class="rm-callout" aria-live="polite"></div>
     <div class="rm-fade"></div>`;
@@ -429,6 +463,12 @@ export function createUI(root) {
   const walChip = $('.rm-wal-chip');
   const walNum = $('.rm-wal-chip b');
   const walSr = $('.rm-wal .rm-sr');
+  const goalsEl = $('.rm-goals');
+  const goalsList = $('.rm-goals ul');
+  const goalsProbe = $('.rm-goals-probe');
+  const questEl = $('.rm-hud-quest');
+  const subEl = $('.rm-hud-sub');
+  const tlEl = $('.rm-hud-tl');
   const clockEl = $('.rm-clock');
   const clockTxt = $('.rm-clock span');
   const toastsEl = $('.rm-toasts');
@@ -466,7 +506,9 @@ export function createUI(root) {
   };
 
   // A prompt is { resolve, fallback, stop?, key?, advance? }. Starting a new one settles the old one.
+  let lastSettle = -1e9;
   const settle = (p, value) => {
+    lastSettle = performance.now();
     if (cur === p) cur = null;
     p.stop?.();
     p.resolve(value);
@@ -478,8 +520,14 @@ export function createUI(root) {
     cur = p;
   };
 
+  // A held key never reaches a prompt (the kitchen opts in with `repeats`), and a press that has just
+  // resolved one prompt cannot also act on the next: it gets a short grace before it takes keys.
   const onKey = (e) => {
     if (dead || !cur || e.ctrlKey || e.metaKey || e.altKey || isTextEntry(e.target)) return;
+    if (!cur.repeats) {
+      if (e.repeat) return;
+      if (performance.now() - lastSettle < 140) return;
+    }
     cur.key?.(e);
   };
   window.addEventListener('keydown', onKey);
@@ -935,9 +983,11 @@ export function createUI(root) {
         go.insertAdjacentHTML('beforeend', '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 6v6H6m0 0l4-4m-4 4l4 4"/></svg>');
         box = h('form', 'rm-choices rm-field', label, input, go);
         box.noValidate = true;
+        const shownAt = performance.now();
         box.addEventListener('submit', (e) => {
           e.preventDefault();
-          if (sent) return;
+          // The Enter that dismissed the line before this field must not also submit it.
+          if (sent || performance.now() - shownAt < 350) return;
           sent = true;
           const v = input.value.trim() || fallback;
           box.classList.add('is-done');
@@ -965,10 +1015,16 @@ export function createUI(root) {
     const lowest = trEl.offsetTop + (walOn ? y1 + walChip.offsetHeight : memOn ? y0 + memChip.offsetHeight : trH);
     const wide = Math.max(moneyEl.hidden ? 0 : moneyEl.offsetWidth, memOn ? memChip.offsetWidth : 0, walOn ? walChip.offsetWidth : 0);
     layer.style.setProperty('--rm-rc-w', hudOn && lowest > 62 && wide ? `${wide + 12}px` : '0px');
+    if (goalsEl.classList.contains('is-on')) {
+      const base = goalsProbe.offsetTop;
+      let bottom = 0;
+      if (hudOn) for (const n of [tlEl, subEl]) { const r = n.getBoundingClientRect(); if (r.height > 0) bottom = Math.max(bottom, r.bottom); }
+      layer.style.setProperty('--rm-goals-y', `${bottom ? Math.max(0, Math.round(bottom + 10 - base)) : 0}px`);
+    }
   };
   if (typeof ResizeObserver === 'function') {
     const ro = new ResizeObserver(syncCorner);
-    [trEl, memChip, walChip, moneyEl].forEach((n) => ro.observe(n));
+    [trEl, memChip, walChip, moneyEl, tlEl, subEl, goalsEl].forEach((n) => ro.observe(n));
     observers.add(ro);
   }
 
@@ -1146,6 +1202,14 @@ export function createUI(root) {
     return {
       show() { on = true; hudEl.classList.add('is-on'); syncCorner(); },
       hide() { on = false; hudEl.classList.remove('is-on'); syncCorner(); },
+      // The tracked quest, one slim line under the objective; null hides it.
+      quest(text) {
+        if (dead) return;
+        const t = text == null ? '' : String(text).trim();
+        if (questEl.lastChild.textContent === t) return;
+        questEl.lastChild.textContent = t;
+        questEl.hidden = !t;
+      },
       // A small day/time chip for modes with no timer ("DAY 2 · 6:40 PM"); null hides it.
       clock(text) {
         if (dead) return;
@@ -1527,6 +1591,9 @@ export function createUI(root) {
     if (dead || !tk) return;
     const t = tk;
     tk = null;
+    unlater(t.swapT);
+    unlater(t.queueT);
+    t.turn?.cancel();
     if (cur?.talk) settle(cur, null);
     t.ro?.disconnect();
     if (t.ro) observers.delete(t.ro);
@@ -1595,7 +1662,6 @@ export function createUI(root) {
       let ready = false;
       let picked = false;
       let idx = 0;
-      let flip = 0;
       let btns = [];
 
       const setActive = (i, focus) => {
@@ -1631,7 +1697,7 @@ export function createUI(root) {
         setActive(i, true);
       };
 
-      p.stop = () => { t?.stop(); unlater(flip); };
+      p.stop = () => { t?.stop(); };
       p.advance = () => {
         if (p.waiting) return;
         if (!ready) t?.finish();
@@ -1665,6 +1731,7 @@ export function createUI(root) {
       };
 
       const render = () => {
+        if (cur !== p) return;
         const name = String(data.name ?? '');
         const mood = MOODS[data.mood] ? data.mood : 'fine';
         const pic = portrait(data.portraitSeed ?? name);
@@ -1739,22 +1806,43 @@ export function createUI(root) {
         });
       };
 
-      if (fresh || reduced()) render();
-      else {
-        T.card.classList.add('is-flip-out');
-        flip = later(() => {
-          if (cur !== p) return;
-          T.card.classList.remove('is-flip-out');
-          restart(T.card, 'is-flip-in');
-          render();
-        }, 170);
+      // Replacing the card turns it over once: the old face swings edge-on, the new one swings in.
+      // Calls that arrive mid-turn only change what the new face will be; they never start another turn.
+      T.run = render;
+      const TURN = 440;
+      const startTurn = () => {
+        T.queueT = 0;
+        T.turnEnd = performance.now() + TURN;
+        T.turn?.cancel();
+        T.turn = T.card.animate([
+          { transform: 'perspective(1100px) rotateX(0deg)', easing: 'cubic-bezier(.55, 0, .9, .55)', offset: 0 },
+          { transform: 'perspective(1100px) rotateX(90deg)', offset: 0.5 },
+          { transform: 'perspective(1100px) rotateX(-90deg)', easing: 'cubic-bezier(.1, .45, .4, 1)', offset: 0.5 },
+          { transform: 'perspective(1100px) rotateX(0deg)', offset: 1 },
+        ], { duration: TURN });
+        T.swapT = later(() => { T.swapT = 0; T.run?.(); }, TURN / 2);
+      };
+      if (fresh || reduced() || typeof T.card.animate !== 'function') {
+        unlater(T.swapT);
+        unlater(T.queueT);
+        T.swapT = 0;
+        T.queueT = 0;
+        render();
+      } else if (T.swapT) {
+        // before the swap: nothing to do, `T.run` already points at this call
+      } else {
+        const left = (T.turnEnd || 0) - performance.now();
+        if (left > 0) {
+          unlater(T.queueT);
+          T.queueT = later(startTurn, left);
+        } else startTurn();
       }
     });
   }
 
   // A one-shot overlay that settles on Enter / Space / click, with the same 350 ms double-press guard as results.
   // `build` gets { box, at, finish } and returns the animation length in ms; everything else is shared.
-  function page({ cls, label, labelledBy, build, fallback }) {
+  function page({ cls, label, labelledBy, build, fallback, close }) {
     return new Promise((resolve) => {
       if (dead) return;
       const p = { resolve, fallback };
@@ -1797,7 +1885,7 @@ export function createUI(root) {
       p.advance = () => { if (ready) dismiss(); else finish(); };
       p.key = (e) => {
         if (e.key === 'Tab') e.preventDefault();
-        else if (isAdvance(e)) {
+        else if (isAdvance(e) || close?.(e)) {
           e.preventDefault();
           if (!e.repeat) p.advance();
         }
@@ -2344,7 +2432,7 @@ export function createUI(root) {
           { label: 'Tips', value: cash(Math.round(T.tips * 100) / 100, true) },
         ],
       });
-      const p = { resolve };
+      const p = { resolve, repeats: true };
       Object.defineProperty(p, 'fallback', { get: totals });
       begin(p);
       stack.classList.add('is-hidden');
@@ -2798,6 +2886,549 @@ export function createUI(root) {
     });
   }
 
+  // ---------- title screen ----------
+
+  // LUMIN CITY over the live city: the game keeps rendering behind this, so it paints almost nothing of its own.
+  function title({ canContinue = false, continueLabel = '' } = {}) {
+    return new Promise((resolve) => {
+      if (dead) return;
+      const p = { resolve, fallback: 'new' };
+      begin(p);
+      stack.classList.add('is-hidden');
+      const items = [
+        { id: 'new', label: 'New game' },
+        ...(canContinue ? [{ id: 'continue', label: 'Continue', sub: String(continueLabel || '') }] : []),
+        { id: 'tutorial', label: 'Tutorial' },
+      ];
+      const letters = (word, w) => word.split('').map((c, i) => {
+        const n = el('span', 'rm-ti-ch', c);
+        n.style.setProperty('--i', i + w * 5);
+        n.style.setProperty('--r', `${[-5, 3, -2, 4, -3, 2][(i + w * 2) % 6]}deg`);
+        n.style.setProperty('--y', `${[0, -.05, .04, -.03, .05, 0][(i + w) % 6]}em`);
+        return n;
+      });
+      const star = el('i', 'rm-ti-star');
+      star.innerHTML = `<svg viewBox="0 0 96 96" aria-hidden="true" focusable="false"><polygon points="${star8()}" fill="#e9b23a" stroke="#1b1a17" stroke-width="4" stroke-linejoin="round"/><circle cx="48" cy="48" r="10" fill="#f8f4ea" stroke="#1b1a17" stroke-width="3.5"/></svg>`;
+      const logo = h('h1', 'rm-ti-logo',
+        h('span', 'rm-ti-w rm-ti-w1', ...letters('LUMIN', 0)),
+        h('span', 'rm-ti-w rm-ti-w2', ...letters('CITY', 1)),
+        star);
+      logo.setAttribute('aria-label', 'Lumin City');
+      logo.querySelectorAll('.rm-ti-ch').forEach((n) => n.setAttribute('aria-hidden', 'true'));
+      const btns = items.map((it, i) => {
+        const b = el('button', 'rm-ti-item');
+        b.type = 'button';
+        b.style.setProperty('--i', i);
+        b.setAttribute('aria-keyshortcuts', String(i + 1));
+        const key = h('span', 'rm-key', String(i + 1));
+        key.setAttribute('aria-hidden', 'true');
+        b.append(key, h('span', 'rm-ti-it', h('b', null, it.label), it.sub ? h('small', null, it.sub) : null), el('i', 'rm-ti-arrow'));
+        return b;
+      });
+      const box = h('div', 'rm-title',
+        h('div', 'rm-ti-scrim'),
+        h('div', 'rm-ti-col',
+          logo,
+          h('p', 'rm-ti-tag', h('span', null, 'a city built from what you remember')),
+          h('div', 'rm-ti-menu', ...btns),
+          h('p', 'rm-ti-hint', h('span', null, '↑ ↓'), ' to choose · ', h('span', null, 'Enter'), ' to go')));
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-modal', 'true');
+      box.setAttribute('aria-label', 'Lumin City');
+      box.querySelector('.rm-ti-menu').setAttribute('role', 'group');
+      layer.insertBefore(box, calloutEl);
+
+      let ready = false;
+      let readyAt = 0;
+      let picked = false;
+      let idx = canContinue ? 1 : 0;
+      const seq = [];
+      const setActive = (i, focus) => {
+        idx = i;
+        btns.forEach((b, k) => b.classList.toggle('is-active', k === i));
+        if (focus) btns[i].focus({ preventScroll: true });
+      };
+      const finish = () => {
+        if (ready) return;
+        ready = true;
+        readyAt = performance.now();
+        seq.forEach(unlater);
+        box.classList.add('is-ready');
+        setActive(idx, !!window.matchMedia('(hover: hover)').matches);
+      };
+      const choose = (i) => {
+        if (!ready || picked || performance.now() - readyAt < 250) return;
+        picked = true;
+        setActive(i);
+        box.classList.add('is-picked');
+        btns.forEach((b, k) => { b.classList.toggle('is-chosen', k === i); b.disabled = true; });
+        later(() => { box.classList.add('is-leaving'); later(() => settle(p, items[i].id), 300); }, 380);
+      };
+      if (reduced()) finish(); else seq.push(later(finish, 1500));
+      btns.forEach((b, i) => {
+        b.addEventListener('click', () => choose(i));
+        b.addEventListener('focus', () => { if (ready) setActive(i); });
+        b.addEventListener('pointerenter', (e) => {
+          if (e.pointerType !== 'mouse' || picked || !ready) return;
+          if (btns.includes(document.activeElement) && document.activeElement !== b) document.activeElement.blur();
+          setActive(i);
+        });
+      });
+      box.addEventListener('click', (e) => { if (!ready && !e.target.closest('button')) finish(); });
+      setActive(idx);
+      p.stop = () => { seq.forEach(unlater); box.remove(); };
+      p.advance = () => { if (!ready) finish(); };
+      p.key = (e) => {
+        if (!ready) {
+          if (isAdvance(e) || /^[1-9]$/.test(e.key) || e.key.startsWith('Arrow')) { e.preventDefault(); finish(); }
+          return;
+        }
+        if (/^[1-9]$/.test(e.key)) {
+          if (+e.key <= items.length) { e.preventDefault(); choose(+e.key - 1); }
+        } else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+          e.preventDefault();
+          setActive((idx + 1) % btns.length, true);
+        } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          setActive((idx + btns.length - 1) % btns.length, true);
+        } else if (e.key === 'Enter' && !btns.includes(document.activeElement)) {
+          e.preventDefault();
+          choose(idx);
+        }
+      };
+    });
+  }
+
+  // ---------- world creation ----------
+
+  const SETUP_ROWS = [['city', 'City'], ['year', 'Year'], ['season', 'Season'], ['weather', 'Weather'], ['time', 'Time of day']];
+
+  // One page, one row per answer, chunky tiles; the weather row follows the season. onChange(state) fires on
+  // every change (and once at the start) so the city behind can show the look as it is chosen.
+  function worldSetup({ options = {}, defaults = {}, onChange } = {}) {
+    return new Promise((resolve) => {
+      if (dead) return;
+      const p = { resolve, fallback: null };
+      begin(p);
+      stack.classList.add('is-hidden');
+      const listFor = (k, st) => {
+        const o = k === 'weather' ? (options.weather?.[st.season] ?? (Array.isArray(options.weather) ? options.weather : [])) : options[k];
+        return Array.isArray(o) ? o.map((x) => (typeof x === 'string' ? { id: x, label: x } : { id: String(x.id), label: String(x.label ?? x.id) })) : [];
+      };
+      const state = {};
+      for (const [k] of SETUP_ROWS) {
+        const list = listFor(k, state);
+        const want = defaults[k] != null ? String(defaults[k]) : '';
+        state[k] = list.some((o) => o.id === want) ? want : (list[0]?.id ?? '');
+      }
+      state.name = String(defaults.name ?? '').slice(0, 18);
+      const titleId = `${id}-su-title`;
+      const box = el('div', 'rm-setup');
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-modal', 'true');
+      box.setAttribute('aria-labelledby', titleId);
+      box.innerHTML = `
+        <form class="rm-su-card" novalidate>
+          <header class="rm-su-head"><small>New game</small><h2 id="${titleId}">Remember a day</h2></header>
+          <div class="rm-su-rows"></div>
+          <div class="rm-su-name">
+            <div class="rm-su-lab"><small>06</small><b>Name</b></div>
+            <label class="rm-su-field"><span class="rm-sr">Name</span><input class="rm-input" type="text" maxlength="18" autocomplete="off" spellcheck="false" enterkeyhint="go"></label>
+          </div>
+          <footer class="rm-su-foot">
+            <p class="rm-su-sum" aria-live="polite"></p>
+            <div class="rm-su-btns">
+              <button type="button" class="rm-su-back"><kbd>Esc</kbd><span>Back</span></button>
+              <button type="button" class="rm-su-rand"><i></i><span>Randomize</span></button>
+              <button type="submit" class="rm-su-go"><span>Start</span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h13M13 6l6 6-6 6"/></svg></button>
+            </div>
+          </footer>
+        </form>`;
+      layer.insertBefore(box, calloutEl);
+      const rowsEl = box.querySelector('.rm-su-rows');
+      const input = box.querySelector('.rm-su-field input');
+      const sumEl = box.querySelector('.rm-su-sum');
+      const backBtn = box.querySelector('.rm-su-back');
+      const randBtn = box.querySelector('.rm-su-rand');
+      const goBtn = box.querySelector('.rm-su-go');
+      randBtn.querySelector('i').innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.4"/><circle cx="15.5" cy="8.5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="8.5" cy="15.5" r="1.4"/><circle cx="15.5" cy="15.5" r="1.4"/></svg>';
+      input.value = state.name;
+      input.placeholder = 'your name';
+
+      const rows = {};
+      const labelOf = (k) => listFor(k, state).find((o) => o.id === state[k])?.label ?? '';
+      const emit = () => {
+        sumEl.textContent = [labelOf('city'), state.year && `${state.year}`, [labelOf('weather'), labelOf('season')].filter(Boolean).join(', ').toLowerCase(), labelOf('time').toLowerCase()].filter(Boolean).join(' · ');
+        if (typeof onChange === 'function') {
+          try { onChange({ ...state }); } catch (e) { queueMicrotask(() => { throw e; }); }
+        }
+      };
+      const paintRow = (k, animate) => {
+        const r = rows[k];
+        const list = listFor(k, state);
+        r.tiles = list.map((o, i) => {
+          const b = el('button', 'rm-su-tile');
+          b.type = 'button';
+          b.setAttribute('role', 'radio');
+          b.dataset.id = o.id;
+          b.style.setProperty('--c', SETUP_COLOUR[o.id] || '#e9b23a');
+          b.style.setProperty('--i', i);
+          const ic = el('span', 'rm-su-ic');
+          ic.innerHTML = setupIcon(o.id);
+          b.append(ic, h('span', 'rm-su-nm', o.label));
+          const on = state[k] === o.id;
+          b.setAttribute('aria-checked', String(on));
+          b.tabIndex = on ? 0 : -1;
+          b.classList.toggle('is-on', on);
+          if (animate) b.classList.add('is-pop');
+          b.addEventListener('click', () => select(k, o.id, true));
+          return b;
+        });
+        r.group.replaceChildren(...r.tiles);
+        r.group.style.setProperty('--n', r.tiles.length);
+      };
+      const select = (k, v, focus) => {
+        if (picked) return;
+        const changed = state[k] !== v;
+        state[k] = v;
+        rows[k].tiles.forEach((b) => {
+          const on = b.dataset.id === v;
+          b.classList.toggle('is-on', on);
+          b.setAttribute('aria-checked', String(on));
+          b.tabIndex = on ? 0 : -1;
+          if (on && focus) b.focus({ preventScroll: true });
+        });
+        if (k === 'season') {
+          const wl = listFor('weather', state);
+          if (!wl.some((o) => o.id === state.weather)) state.weather = wl[0]?.id ?? '';
+          paintRow('weather', true);
+        }
+        if (changed || k === 'season') emit();
+      };
+      SETUP_ROWS.forEach(([k, label], n) => {
+        const r = el('div', 'rm-su-row');
+        r.style.setProperty('--n', n);
+        const group = el('div', 'rm-su-tiles');
+        group.setAttribute('role', 'radiogroup');
+        group.setAttribute('aria-label', label);
+        r.append(h('div', 'rm-su-lab', h('small', null, String(n + 1).padStart(2, '0')), h('b', null, label)), group);
+        rows[k] = { row: r, group, tiles: [] };
+        rowsEl.append(r);
+        paintRow(k, false);
+      });
+
+      let picked = false;
+      let ready = false;
+      const seq = [];
+      const stops = () => [...SETUP_ROWS.map(([k]) => () => rows[k].tiles.find((b) => b.tabIndex === 0) ?? rows[k].tiles[0]), () => input, () => goBtn];
+      const move = (from, d) => {
+        const list = stops().map((f) => f());
+        const at = list.findIndex((n) => n === from || n?.contains?.(from));
+        const to = list[clamp((at < 0 ? 0 : at) + d, 0, list.length - 1)];
+        to?.focus({ preventScroll: false });
+        if (to === input) input.select();
+      };
+      const start = () => {
+        if (picked || !ready) return;
+        picked = true;
+        box.classList.add('is-leaving');
+        const out = { ...state, name: input.value.trim() || String(defaults.name ?? '').trim() || 'Kid' };
+        later(() => settle(p, out), 260);
+      };
+      const back = () => {
+        if (picked) return;
+        picked = true;
+        box.classList.add('is-leaving');
+        later(() => settle(p, null), 240);
+      };
+      const randomize = () => {
+        if (picked) return;
+        const pickOne = (list) => list[Math.floor(Math.random() * list.length)]?.id;
+        for (const [k] of SETUP_ROWS) {
+          const v = pickOne(listFor(k, state));
+          if (v) {
+            state[k] = v;
+            if (k === 'season') paintRow('weather', true);
+            rows[k].tiles.forEach((b) => {
+              const on = b.dataset.id === v;
+              b.classList.toggle('is-on', on);
+              b.setAttribute('aria-checked', String(on));
+              b.tabIndex = on ? 0 : -1;
+            });
+          }
+        }
+        if (!input.value.trim()) input.value = SETUP_NAMES[Math.floor(Math.random() * SETUP_NAMES.length)];
+        state.name = input.value;
+        restart(randBtn, 'is-spin');
+        box.classList.remove('is-shuffled');
+        void box.offsetWidth;
+        box.classList.add('is-shuffled');
+        emit();
+      };
+      input.addEventListener('input', () => { state.name = input.value; });
+      box.querySelector('form').addEventListener('submit', (e) => { e.preventDefault(); start(); });
+      backBtn.addEventListener('click', back);
+      randBtn.addEventListener('click', randomize);
+      box.addEventListener('keydown', (e) => {
+        if (e.ctrlKey || e.metaKey || e.altKey || e.repeat && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        const t = e.target;
+        if (e.key === 'Escape') { e.preventDefault(); back(); return; }
+        if (t.matches?.('[role=radio]')) {
+          const k = SETUP_ROWS.find(([key]) => rows[key].group === t.parentElement)?.[0];
+          const tiles = rows[k]?.tiles ?? [];
+          const i = tiles.indexOf(t);
+          if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+            e.preventDefault();
+            const j = clamp(i + (e.key === 'ArrowRight' ? 1 : -1), 0, tiles.length - 1);
+            if (tiles[j]) select(k, tiles[j].dataset.id, true);
+          } else if (e.key === 'Home' || e.key === 'End') {
+            e.preventDefault();
+            select(k, tiles[e.key === 'Home' ? 0 : tiles.length - 1].dataset.id, true);
+          } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            move(t, e.key === 'ArrowDown' ? 1 : -1);
+          } else if (e.key === ' ') {
+            e.preventDefault();
+            select(k, t.dataset.id, true);
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            start();
+          }
+        } else if (t === input) {
+          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); move(input, e.key === 'ArrowDown' ? 1 : -1); }
+        } else if (t === goBtn && e.key === 'ArrowUp') { e.preventDefault(); move(goBtn, -1); }
+        else if ((t === backBtn || t === randBtn || t === goBtn) && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
+          e.preventDefault();
+          const order = [backBtn, randBtn, goBtn];
+          order[clamp(order.indexOf(t) + (e.key === 'ArrowRight' ? 1 : -1), 0, 2)].focus();
+        }
+      });
+      const readyAt = reduced() ? 0 : 700;
+      seq.push(later(() => { ready = true; box.classList.add('is-ready'); const first = rows.city.tiles.find((b) => b.tabIndex === 0); if (window.matchMedia('(hover: hover)').matches) first?.focus({ preventScroll: true }); }, readyAt));
+      emit();
+      p.stop = () => { seq.forEach(unlater); box.remove(); };
+      p.advance = () => {};
+      // With focus on the page itself (nothing chosen yet): Enter starts, Esc goes back.
+      p.key = (e) => {
+        if (e.key === 'Escape') { e.preventDefault(); back(); }
+        else if (e.key === 'Enter') { e.preventDefault(); start(); }
+      };
+    });
+  }
+
+  // ---------- life goals strip ----------
+
+  const GOAL_GLYPH = { land: 'owner', mayor: 'mayor', powers: 'hero' };
+
+  // Three small meters that stay up. Rows are updated in place so a meter can slide as it fills.
+  function goals(list) {
+    if (dead) return;
+    if (!Array.isArray(list) || !list.length) {
+      goalsEl.classList.remove('is-on');
+      syncCorner();
+      return;
+    }
+    const items = list.slice(0, 4);
+    const sig = items.map((g) => `${g.id}|${g.label}`).join('~');
+    if (goalsList.dataset.sig !== sig) {
+      goalsList.dataset.sig = sig;
+      goalsList.replaceChildren(...items.map((g) => {
+        const gl = GOAL_GLYPH[g.id] || (GLYPHS[g.id] ? g.id : 'spark');
+        const ic = el('i', 'rm-gl-ic');
+        const art = el('span', 'rm-ab-g');
+        art.innerHTML = GLYPHS[gl];
+        ic.append(art);
+        const bar = h('span', 'rm-gl-bar', el('i'));
+        bar.setAttribute('role', 'meter');
+        bar.setAttribute('aria-valuemin', '0');
+        bar.setAttribute('aria-valuemax', '100');
+        const li = h('li', 'rm-gl', ic, h('div', 'rm-gl-b', h('div', 'rm-gl-t', h('b', null, String(g.label ?? '')), h('span')), bar, h('small')));
+        li.dataset.id = String(g.id);
+        return li;
+      }));
+    }
+    items.forEach((g, i) => {
+      const li = goalsList.children[i];
+      const f = clamp(Number(g.value) || 0, 0, 1);
+      const pct = Math.round(f * 100);
+      li.classList.toggle('is-done', f >= 1);
+      li.querySelector('.rm-gl-bar i').style.transform = `scaleX(${f})`;
+      const bar = li.querySelector('.rm-gl-bar');
+      bar.setAttribute('aria-valuenow', String(pct));
+      bar.setAttribute('aria-label', `${g.label}${g.detail ? `: ${g.detail}` : ''}`);
+      const val = li.querySelector('.rm-gl-t span');
+      if (val.textContent !== `${pct}%`) val.textContent = f >= 1 ? 'Done' : `${pct}%`;
+      const det = li.querySelector('small');
+      det.textContent = g.detail ? String(g.detail) : '';
+      li.title = g.detail ? `${g.label}: ${g.detail}` : String(g.label ?? '');
+    });
+    goalsEl.classList.add('is-on');
+    syncCorner();
+  }
+
+  // ---------- journal ----------
+
+  function journal({ quests = [], collectibles = [] } = {}) {
+    const titleId = `${id}-jn-title`;
+    const qs = (Array.isArray(quests) ? quests : []).map((q) => ({ ...q, state: ['done', 'failed'].includes(q.state) ? q.state : 'active' }));
+    const order = { active: 0, done: 1, failed: 2 };
+    const sorted = [...qs].sort((a, b) => order[a.state] - order[b.state]);
+    const cols = (Array.isArray(collectibles) ? collectibles : []).slice(0, 8);
+    return page({
+      cls: 'rm-journal',
+      labelledBy: titleId,
+      fallback: undefined,
+      close: (e) => e.key === 'Escape' || e.key === 'j' || e.key === 'J',
+      build({ box }) {
+        const faces = new Map();
+        const qEl = (q, i) => {
+          const face = el('span', 'rm-jn-face');
+          face.innerHTML = portrait(q.who ?? q.title ?? i).svg;
+          const stamp = q.state === 'done' ? 'Done' : q.state === 'failed' ? 'Failed' : '';
+          const li = h('li', `rm-jn-q is-${q.state}`,
+            face,
+            h('div', 'rm-jn-qb',
+              q.who ? h('small', null, String(q.who)) : null,
+              h('b', null, String(q.title ?? '')),
+              q.detail ? h('p', null, String(q.detail)) : null,
+              h('div', 'rm-jn-meta',
+                q.reward ? h('span', 'rm-jn-reward', h('i', null, 'Reward'), String(q.reward)) : null,
+                q.due && q.state === 'active' ? h('span', 'rm-jn-due', h('i', null, 'Due'), String(q.due)) : null)),
+            stamp ? h('span', 'rm-jn-stamp', stamp) : null);
+          li.style.setProperty('--i', i);
+          li.setAttribute('aria-label', `${q.title}, ${q.state}`);
+          return li;
+        };
+        const list = sorted.length ? h('ol', 'rm-jn-list', ...sorted.map(qEl)) : h('p', 'rm-jn-empty', 'Nothing owed, nothing promised. Talk to someone.');
+        const found = cols.reduce((a, c) => a + (Number(c.found) || 0), 0);
+        const all = cols.reduce((a, c) => a + (Number(c.total) || 0), 0);
+        const tally = h('aside', 'rm-jn-tally',
+          h('h3', null, 'Collection'),
+          all ? h('p', 'rm-jn-big', h('b', null, fmt(found)), h('span', null, ` / ${fmt(all)}`)) : null,
+          cols.length ? h('ul', null, ...cols.map((c) => {
+            const f = clamp((Number(c.found) || 0) / Math.max(1, Number(c.total) || 0), 0, 1);
+            const fill = el('i');
+            fill.style.setProperty('--f', f);
+            const bar = h('span', 'rm-jn-bar', fill);
+            bar.setAttribute('role', 'meter');
+            bar.setAttribute('aria-valuemin', '0');
+            bar.setAttribute('aria-valuemax', String(Number(c.total) || 0));
+            bar.setAttribute('aria-valuenow', String(Number(c.found) || 0));
+            bar.setAttribute('aria-label', String(c.label ?? ''));
+            return h('li', f >= 1 ? 'is-full' : '', h('span', 'rm-jn-cl', String(c.label ?? '')), bar, h('span', 'rm-jn-cn', `${fmt(Number(c.found) || 0)}/${fmt(Number(c.total) || 0)}`));
+          })) : h('p', 'rm-jn-empty', 'Nothing to collect yet.'));
+        const btn = h('button', 'rm-btn', h('kbd', null, 'J'), h('span', null, 'Close'));
+        btn.type = 'button';
+        const active = sorted.filter((q) => q.state === 'active').length;
+        const sheet = h('div', 'rm-jn-sheet',
+          h('header', 'rm-jn-head',
+            h('div', null, h('small', null, 'Journal'), (() => { const t = h('h2', null, 'Favours & finds'); t.id = titleId; return t; })()),
+            h('p', 'rm-jn-count', h('b', null, String(active)), active === 1 ? ' open favour' : ' open favours')),
+          h('div', 'rm-jn-body', h('section', 'rm-jn-quests', h('h3', null, 'Favours'), list), tally),
+          h('div', 'rm-jn-actions', btn));
+        box.append(sheet);
+        faces.clear();
+        return 600 + Math.min(sorted.length, 6) * 90;
+      },
+    });
+  }
+
+  // ---------- a favour on offer ----------
+
+  // A resident asks for something: their face on the left, what they need and what it pays on the right.
+  // Resolves the chosen option id; Esc (or being interrupted) is "not now" and resolves null.
+  function quest({ who = '', portraitSeed, title = '', detail = '', reward = '', options } = {}) {
+    return new Promise((resolve) => {
+      if (dead) return;
+      const p = { resolve, fallback: null };
+      begin(p);
+      const opts = (Array.isArray(options) && options.length ? options : [{ id: 'accept', label: 'Accept' }, { id: 'decline', label: 'Not now' }]).slice(0, 3);
+      const titleId = `${id}-qs-title`;
+      const box = el('div', 'rm-quest');
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-modal', 'true');
+      box.setAttribute('aria-labelledby', titleId);
+      const pic = portrait(portraitSeed ?? who);
+      const photo = el('div', 'rm-tk-photo');
+      photo.innerHTML = pic.svg;
+      photo.style.setProperty('--h', pic.hue);
+      const rewards = (Array.isArray(reward) ? reward : reward ? [reward] : []).map((r) => h('span', 'rm-qs-chip', String(r)));
+      const tEl = h('h2', null, String(title));
+      tEl.id = titleId;
+      const btns = opts.map((o, i) => {
+        const b = el('button', `rm-qs-opt${i === 0 ? ' is-main' : ''}`);
+        b.type = 'button';
+        b.style.setProperty('--i', i);
+        b.setAttribute('aria-keyshortcuts', String(i + 1));
+        const key = h('span', 'rm-key', String(i + 1));
+        key.setAttribute('aria-hidden', 'true');
+        b.append(key, h('span', 'rm-qs-ot', h('b', null, String(o.label)), o.hint ? h('small', null, String(o.hint)) : null));
+        return b;
+      });
+      const card = h('div', 'rm-qs-card',
+        (() => { const x = h('button', 'rm-tk-x', h('kbd', null, 'Esc'), h('span', null, 'Not now')); x.type = 'button'; return x; })(),
+        h('div', 'rm-qs-body',
+          h('div', 'rm-qs-side', h('div', 'rm-tk-pic', photo), who ? h('p', 'rm-qs-who', String(who)) : null),
+          h('div', 'rm-qs-main',
+            h('small', 'rm-qs-kicker', who ? `${String(who).split(/\s+/)[0]} needs a hand` : 'A favour'),
+            tEl,
+            detail ? h('p', 'rm-qs-detail', String(detail)) : null,
+            rewards.length ? h('div', 'rm-qs-reward', h('i', null, 'Reward'), ...rewards) : null,
+            (() => { const g = h('div', 'rm-qs-opts', ...btns); g.setAttribute('role', 'group'); g.dataset.n = String(btns.length); return g; })())));
+      box.append(card);
+      layer.insertBefore(box, calloutEl);
+      let ready = false;
+      let picked = false;
+      let idx = -1;
+      const xBtn = card.querySelector('.rm-tk-x');
+      const setActive = (i, focus) => {
+        idx = i;
+        btns.forEach((b, k) => b.classList.toggle('is-active', k === i));
+        if (focus) btns[i]?.focus({ preventScroll: true });
+      };
+      const out = (v) => {
+        if (picked) return;
+        picked = true;
+        box.classList.add('is-leaving');
+        later(() => settle(p, v), 240);
+      };
+      const choose = (i) => {
+        if (!ready || picked || !opts[i]) return;
+        setActive(i);
+        btns[i].classList.add('is-picked');
+        btns.forEach((b) => { b.disabled = true; });
+        later(() => out(opts[i].id), 220);
+      };
+      const at = later(() => { ready = true; box.classList.add('is-ready'); if (window.matchMedia('(hover: hover)').matches) setActive(0, true); }, reduced() ? 0 : 750);
+      if (reduced()) { unlater(at); ready = true; box.classList.add('is-ready'); }
+      btns.forEach((b, i) => {
+        b.addEventListener('click', () => choose(i));
+        b.addEventListener('focus', () => setActive(i));
+        b.addEventListener('pointerenter', (e) => {
+          if (e.pointerType !== 'mouse' || picked || !ready) return;
+          if (btns.includes(document.activeElement) && document.activeElement !== b) document.activeElement.blur();
+          setActive(i);
+        });
+      });
+      xBtn.addEventListener('click', () => out(null));
+      p.stop = () => { unlater(at); box.remove(); };
+      p.key = (e) => {
+        if (e.key === 'Escape' || e.key === 'Backspace') { e.preventDefault(); out(null); return; }
+        if (!ready || picked) return;
+        if (/^[1-3]$/.test(e.key)) {
+          if (+e.key <= opts.length) { e.preventDefault(); choose(+e.key - 1); }
+        } else if (e.key.startsWith('Arrow')) {
+          e.preventDefault();
+          const d = e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 1;
+          setActive(idx < 0 ? (d > 0 ? 0 : btns.length - 1) : (idx + d + btns.length) % btns.length, true);
+        } else if (e.key === 'Enter' && !btns.includes(document.activeElement)) {
+          e.preventDefault();
+          choose(idx < 0 ? 0 : idx);
+        }
+      };
+    });
+  }
+
   function fade(to, ms = 600) {
     if (dead) return Promise.resolve();
     const target = clamp(Number(to) || 0, 0, 1);
@@ -2852,6 +3483,11 @@ export function createUI(root) {
     closeShop,
     property,
     kitchen,
+    title,
+    worldSetup,
+    goals,
+    journal,
+    quest,
     fade,
     destroy() {
       if (dead) return;

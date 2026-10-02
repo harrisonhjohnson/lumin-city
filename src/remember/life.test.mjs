@@ -380,7 +380,7 @@ test('residents are the walkers: one body per outdoor resident, looks from their
     assert.equal(w.model.userData.dims.h > 0, true);
   }
   assert.equal(life.pedFor('r999'), null);
-  assert.ok(life.pedestrians.length <= inspect(life).cap);
+  assert.ok(life.pedestrians.filter((w) => !w.leaving).length <= inspect(life).cap, 'the cap holds (people walking home to their door finish first)');
   assert.ok(life.pedestrians.every((w) => w.residentId === null || typeof w.residentId === 'string'));
   for (const w of life.pedestrians) assert.ok(!inBlock(w.position.x, w.position.z, 0.2), 'nobody inside a building');
   const near = life.nearestPed(p.position, 400);
@@ -527,6 +527,6 @@ test('the life layer with a town stays well inside its time budget', () => {
     let sum = 0, n = 0, worst = 0;
     for (let i = 0; i < 600; i++) { town.tick(2); const t = performance.now(); life.update(1 / 30, p); const d = performance.now() - t; sum += d; n++; worst = Math.max(worst, d); }
     assert.ok(sum / n < 1, `${era}: ${(sum / n).toFixed(3)} ms per update`);
-    assert.ok(life.pedestrians.length <= inspect(life).cap);
+    assert.ok(life.pedestrians.filter((w) => !w.leaving).length <= inspect(life).cap, 'the cap holds (people walking home to their door finish first)');
   }
 });

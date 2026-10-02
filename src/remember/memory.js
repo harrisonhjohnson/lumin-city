@@ -77,6 +77,7 @@ export const ACTIVITIES = [
   { id: 'taxi', glyph: 'taxi', colour: '#f6b90c', label: 'Cab driver', hint: 'I was driving a cab, and everyone was late.' },
   { id: 'shop', glyph: 'shop', colour: '#c8553d', label: 'Pizza shop', hint: 'I was working the counter at the pizzeria.' },
   { id: 'kaiju', glyph: 'kaiju', colour: '#4a5d3a', label: 'The monster', hint: 'Something enormous came out of the river.' },
+  { id: 'wait', glyph: 'spark', colour: '#8a7a5c', label: 'Let time pass', hint: 'Sit on a bench. Watch the city. Wait for later.' },
   { id: 'roam', glyph: 'roam', colour: '#6b5b95', label: 'Just wander', hint: 'Nothing much. I was just walking around.' },
 ];
 export const ERA_LABEL = Object.fromEntries(Object.entries(ERAS).map(([k, v]) => [k, v.label]));

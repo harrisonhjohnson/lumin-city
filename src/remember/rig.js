@@ -175,12 +175,17 @@ function ground(m) {
   if (m.position.y <= floor) { if (!m.grounded) m.landed = m.air; m.position.y = floor; m.velocity.y = 0; m.grounded = true; m.air = 0; }
   else { m.grounded = false; }
 }
-// The player reaches the perimeter highways (the outer avenues at ±280), stopping at the quays.
-const PLAY_X = 296;
+// How far the memory reaches. On the ground you can roll off the quays into the water (main.js
+// fishes you out); in the air you can fly out over the rivers, then hit the edge.
+//   island  the land: past the perimeter highways (±280) to the quays, and the ground's ends
+export const ISLAND = { x: 305, z: [-705, 285] };
+const REACH = { ground: { x: 330, z: [-730, 310] }, air: { x: 520, z: [-900, 480] } };
+export const inWater = (p) => Math.abs(p.x) > ISLAND.x + 1 || p.z < ISLAND.z[0] || p.z > ISLAND.z[1];
 function bounds(m) {
-  const p = m.position;
-  p.x = THREE.MathUtils.clamp(p.x, -PLAY_X, PLAY_X);
-  p.z = THREE.MathUtils.clamp(p.z, WORLD.z[0], WORLD.z[1]);
+  const p = m.position, R = m.M.kind === 'flight' || m.M.kind === 'swing' ? REACH.air : REACH.ground;
+  const x = THREE.MathUtils.clamp(p.x, -R.x, R.x), z = THREE.MathUtils.clamp(p.z, R.z[0], R.z[1]);
+  m.edge = x !== p.x || z !== p.z;
+  p.x = x; p.z = z;
 }
 
 // Push a circle out of every box it overlaps whose top is above `y`. Returns true on a hit.

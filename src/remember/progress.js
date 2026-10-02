@@ -31,7 +31,7 @@ export const FORKS = {
 };
 export const GAMES = Object.keys(PATH);
 
-// The power each game leaves you with in free roam at KEEP_RANK or better. Aliens at an A
+// The power each game leaves you with in free roam at KEEP_RANK or better. Aliens at a B
 // also gives laser vision and ice breath (POWERS).
 export const PERKS = {
   skate:  { id: 'board',   label: 'Skateboard',     glyph: 'skate',  mover: 'board',   ride: 'board',   text: 'Your board is under your arm. Press its key in the city to ride.' },
@@ -43,7 +43,7 @@ export const PERKS = {
   taxi:   { id: 'cab',     label: 'Cab',            glyph: 'taxi',   mover: 'car',     ride: 'cab',     text: 'The cab is yours now. Press its key in the city to drive.' },
   shop:   { id: 'deed',    label: 'A share of the pizzeria', glyph: 'shop', mover: null, ride: null,    text: 'The owner made you a partner. You own your first building — and you can buy more in the city.' },
 };
-export const POWERS = { label: 'Laser vision and ice breath', text: 'Your eyes burn, your breath freezes. And something enormous is coming for the city.' };
+export const POWERS = { label: 'Laser vision and ice breath', text: 'Your eyes burn, your breath freezes. Hold the left button to burn saucers out of the sky, F to freeze them. Get an A — something bigger is coming.' };
 
 // Upgrades bought with cash before a round: each makes an A a little more reachable.
 // Prices are 2000 dollars; main.js scales by era.
@@ -80,6 +80,9 @@ export function load(raw) {
 
 // ---- the path -------------------------------------------------------------------------
 
+// Saves from before the path may hold a later game but none of the three ways in; their first
+// way in is still free, so nobody is stuck.
+export const hasStart = (p) => p.unlocked.some((g) => PATH[g]?.start);
 export function isOpen(p, game) { return game === 'roam' ? p.unlocked.length > 0 : p.unlocked.includes(game); }
 export function requirementMet(p, game) { return Object.entries(PATH[game]?.requires || {}).every(([g, r]) => atLeast(p.best[g], r)); }
 export function requirementText(game, names) { return Object.entries(PATH[game]?.requires || {}).map(([g, r]) => `Get ${r === 'A' ? 'an' : 'a'} ${r} in ${names[g] || g}`).join(' and '); }
@@ -87,7 +90,7 @@ export function requirementText(game, names) { return Object.entries(PATH[game]?
 export function costOf(p, game) {
   const node = PATH[game];
   if (!node) return Infinity;
-  if (node.start) return p.unlocked.length === 0 ? 0 : UNLOCK_COST;
+  if (node.start) return hasStart(p) ? UNLOCK_COST : 0;
   if (node.fork) { const chosen = p.forks[node.fork]; return !chosen || chosen === game ? FORK_COST : ROAD_NOT_TAKEN; }
   return node.cost ?? UNLOCK_COST;
 }
@@ -119,12 +122,12 @@ export function forksReady(p) { return Object.entries(FORKS).filter(([f, def]) =
 // ---- rounds -------------------------------------------------------------------------------
 
 // A finished round: memories and cash for the rank, a new best, the perk if it was kept just
-// now, and laser + ice for an A against the aliens.
+// now, and laser + ice for a B against the aliens.
 export function finish(p, game, rank) {
   const earned = MEMORIES_FOR[rank] ?? 0, cash = CASH_FOR[rank] ?? 0;
   const best = !p.best[game] || atLeast(rank, p.best[game]) ? rank : p.best[game];
   const keeps = PERKS[game] && atLeast(rank, KEEP_RANK) && !p.kept.includes(game);
-  const powers = game === 'aliens' && atLeast(rank, 'A') && !p.powers.includes('laser') ? ['laser', 'ice'] : [];
+  const powers = game === 'aliens' && atLeast(rank, 'B') && !p.powers.includes('laser') ? ['laser', 'ice'] : [];
   const achieved = game === 'kaiju' && atLeast(rank, 'A') && !p.achieved.includes('hero') ? ['hero'] : [];
   const next = {
     ...p, memories: p.memories + earned, best: { ...p.best, [game]: best }, attempts: { ...p.attempts, [game]: (p.attempts[game] || 0) + 1 },

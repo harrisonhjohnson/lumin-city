@@ -6,6 +6,7 @@ import { collide } from './rig.js';
 import { PERKS } from './progress.js';
 import { START, WORLD } from '../world/city/bible.js';
 import { kaiju } from './boss.js';
+import { createPowers } from './powers.js';
 
 // The minigames and free roam. Each create(ctx) returns a round: where to start, what the
 // narrator says first, and update(dt, mover, hud) which places, checks and scores things.
@@ -87,8 +88,8 @@ export const MODES = {
       m.year === '2100' ? 'You had a hoverboard by then. You still called it skateboarding.' : 'You had your board under one arm and the whole afternoon ahead of you.',
       'Grab the glowing memories. The high ones need a jump. Land on a rail to grind it.',
     ],
-    controls: 'W push · A/D carve · SPACE ollie · land on rails to grind, A/D to balance',
-    create({ practice = 1, upgrades = new Set(), group, rng, controls }) {
+    controls: 'W push · A/D carve · SPACE ollie · in the air J kickflip, K heelflip, L 360 shove-it · land on rails to grind',
+    create({ practice = 1, upgrades = new Set(), group, rng, controls, ride }) {
       const rails = [];
       for (let i = 0; i < 14; i++) {
         const ax = rng.pick(INNER_AVENUES), side = rng() < 0.5 ? -1 : 1, x = ax + side * 13.6;
@@ -106,7 +107,10 @@ export const MODES = {
         p.y = high ? 3 : 0.9;
         orbs.push({ model: place(group, models.makeOrb(high ? '#ff8fb1' : '#ffd66b'), p), high, got: false });
       }
-      let score = 0, combo = 0, comboT = 0, got = 0, bestAir = 0, grind = null, bestGrind = 0;
+      let score = 0, combo = 0, comboT = 0, got = 0, bestAir = 0, grind = null, bestGrind = 0, trick = null, banked = 0, tricks = 0;
+      // Tricks in the air: each spins the board; finish it before you land or you bail.
+      const TRICKS = { KeyJ: { name: 'Kickflip', axis: 'z', turn: 1, dur: 0.34, pts: 150 }, KeyK: { name: 'Heelflip', axis: 'z', turn: -1, dur: 0.34, pts: 150 }, KeyL: { name: '360 shove-it', axis: 'y', turn: 1, dur: 0.42, pts: 220 } };
+      const spin = (axis, a) => { const b = ride?.(); if (b) { b.rotation.z = axis === 'z' ? a : 0; b.rotation.y = axis === 'y' ? a : 0; } };
       const startGrind = (m, hud) => {
         if (m.velocity.y > 0.5 || m.speed < 4) return;
         const f = m.feet;
@@ -128,6 +132,19 @@ export const MODES = {
         update(dt, m, hud) {
           if (upgrades.has('big-pop') && !m.M.popped) m.M = { ...m.M, hop: 11.5, popped: true };
           comboT -= dt; if (comboT <= 0 && !grind) combo = 0;
+          if (!m.grounded && !grind) {
+            for (const code of ['KeyJ', 'KeyK', 'KeyL']) if (!trick && controls.took(code)) trick = { ...TRICKS[code], t: 0 };
+            if (trick) {
+              trick.t += dt;
+              const k = Math.min(1, trick.t / trick.dur);
+              spin(trick.axis, trick.turn * k * Math.PI * 2);
+              if (k >= 1) { spin('z', 0); banked += trick.pts; tricks++; combo = Math.min(combo + 1, 5); comboT = 4; hud.toast(`${trick.name}!`, 'good'); trick = null; }
+            }
+          }
+          if ((m.grounded || grind) && (trick || banked)) {
+            if (trick) { spin('z', 0); hud.toast('Bailed! Land the trick first.', 'bad'); combo = 0; banked = 0; trick = null; m.speed *= 0.3; m.velocity.multiplyScalar(0.3); }
+            else { const pts = banked * Math.max(1, combo); score += pts; hud.toast(`Landed it  +${pts}`, 'good'); banked = 0; }
+          }
           if (grind && m.velocity.y > 1) { score += 100 * combo; hud.toast(`Hopped off  +${100 * combo}`, 'good'); grind = null; }
           if (!grind && !m.grounded) startGrind(m, hud);
           if (grind) {
@@ -163,8 +180,7 @@ export const MODES = {
           if (got === orbs.length) this.done = true;
           hud.set({ score, objective: `Memories ${got}/${orbs.length}` });
         },
-        guide: (m) => { let best = null, bd = Infinity; for (const o of orbs) if (!o.got) { const d = o.model.position.distanceToSquared(m.feet); if (d < bd) { bd = d; best = o.model.position; } } return best; },
-        results: () => ({ score: Math.round(score * practice), rank: rankFor(score * practice, [6000, 4300, 2800, 1300]), lines: [{ label: 'Memories', value: `${got}/${orbs.length}` }, { label: 'Best air', value: `${bestAir.toFixed(1)} s` }, { label: 'Longest grind', value: `${bestGrind.toFixed(1)} s` }] }),
+        results: () => ({ score: Math.round(score * practice), rank: rankFor(score * practice, [6000, 4300, 2800, 1300]), lines: [{ label: 'Memories', value: `${got}/${orbs.length}` }, { label: 'Tricks landed', value: String(tricks) }, { label: 'Longest grind', value: `${bestGrind.toFixed(1)} s` }] }),
       };
     },
   },
@@ -338,16 +354,21 @@ export const MODES = {
       `The saucers came in low over ${m.city === 'tokyo' ? 'Shinjuku' : 'Midtown'}. And you could fly. You'd always been able to fly.`,
       'Ram the saucers out of the sky before their beams take the city apart.',
     ],
-    controls: 'WASD fly · SPACE up · C down · SHIFT boost · mouse steers',
-    create({ practice = 1, upgrades = new Set(), group, rng, life }) {
+    controls: 'WASD fly · SPACE up · C down · SHIFT boost · mouse steers · laser vision: hold left mouse or L, ice: F (once you have them)',
+    create({ practice = 1, upgrades = new Set(), group, rng, life, world, progress, controls, camera }) {
       const ufos = [];
+      // Saucers hover above whatever's under them, never down between the towers.
+      const roofNear = (x, z) => { let h = 0; for (const b of world.city.buildings) if (x > b.minX - 25 && x < b.maxX + 25 && z > b.minZ - 25 && z < b.maxZ + 25) h = Math.max(h, b.height); return h; };
+      const powers = progress.powers.includes('laser') ? createPowers({ camera, group }) : null;
+      let target = null;
       let score = 0, downed = 0, lost = 0, combo = 0, comboT = 0, wave = 0;
       const spawnWave = () => {
         wave++;
         for (let i = 0; i < 8 + wave * 2; i++) {
-          const p = V(rng.range(-220, 220), rng.range(45, 95), rng.range(-600, 180));
+          const p = V(rng.range(-220, 220), 0, rng.range(-600, 180));
+          p.y = Math.max(45, roofNear(p.x, p.z) + 22) + rng.range(0, 30);
           const model = place(group, models.makeUFO(), p);
-          ufos.push({ model, home: p.clone(), phase: rng() * 6.28, r: rng.range(15, 45), speed: rng.range(0.15, 0.35) * (1 + wave * 0.15), beam: 0, beaming: rng() < 0.4, down: false, vy: 0 });
+          ufos.push({ model, home: p.clone(), phase: rng() * 6.28, r: rng.range(15, 45), speed: rng.range(0.15, 0.35) * (1 + wave * 0.15), beam: 0, beaming: rng() < 0.4, down: false, vy: 0, hp: 1, slow: 0 });
         }
       };
       spawnWave();
@@ -355,10 +376,13 @@ export const MODES = {
       return {
         spawn: { at: V(-25, START.roof + 2, 4), heading: 0 },
         objective: 'Knock the saucers down',
+        // The arrow sticks to one saucer until it's down or another is much closer, so it
+        // doesn't flick between targets.
         guide(m) {
           let best = null, bd = Infinity;
-          for (const u of ufos) if (!u.down) { const d = u.model.position.distanceToSquared(m.feet); if (d < bd) { bd = d; best = u.model.position; } }
-          return best;
+          for (const u of ufos) if (!u.down) { const d = u.model.position.distanceToSquared(m.feet); if (d < bd) { bd = d; best = u; } }
+          if (!target || target.down || (best && bd < target.model.position.distanceToSquared(m.feet) * 0.35)) target = best;
+          return target?.model.position || null;
         },
         update(dt, m, hud) {
           if (upgrades.has('jet-boots') && !m.M.jets) m.M = { ...m.M, boost: 82, jets: true };
@@ -372,7 +396,8 @@ export const MODES = {
               if (o.position.y < -3) o.visible = false;
               continue;
             }
-            o.position.set(u.home.x + Math.cos(t * u.speed + u.phase) * u.r, u.home.y + Math.sin(t * 1.3 + u.phase) * 2, u.home.z + Math.sin(t * u.speed + u.phase) * u.r);
+            u.slow = Math.max(0, u.slow - dt); u.clock = (u.clock || 0) + dt * (u.slow > 0 ? 0.3 : 1);
+            o.position.set(u.home.x + Math.cos(u.clock * u.speed + u.phase) * u.r, u.home.y + Math.sin(t * 1.3 + u.phase) * 2, u.home.z + Math.sin(u.clock * u.speed + u.phase) * u.r);
             u.beam += dt;
             const on = u.beaming && (u.beam % 14) > 5;
             if (o.userData.beam) o.userData.beam.visible = on;
@@ -389,7 +414,7 @@ export const MODES = {
                 if (pr.position.y > o.position.y - 3) { pr.visible = false; u.prey = null; lost++; score = Math.max(0, score - 150); hud.toast('Gone. Into the saucer.', 'bad'); }
               } else { pr.position.y = Math.max(0, pr.position.y - dt * 20); if (pr.position.y === 0) u.prey = null; }
             } else if (on && !life && (u.beam % 14) > 13.9) { lost++; score = Math.max(0, score - 100); hud.toast('They took a water tower!', 'bad'); u.beam += 0.2; }
-            if (near(body, o.position, upgrades.has('big-fists') ? 8.5 : 6)) {
+            if (u.hp <= 0 || near(body, o.position, upgrades.has('big-fists') ? 8.5 : 6)) {
               if (u.prey) { u.prey.rotation.z = 0; const dropped = u.prey; u.prey = null; dropped.userData.falling = true; score += 200; hud.toast('Saved it!  +200', 'good'); }
               u.down = true; u.vy = 4; downed++;
               combo = Math.min(combo + 1, 6); comboT = 4;
@@ -399,10 +424,18 @@ export const MODES = {
             }
           }
           for (const c of group.children) if (c.userData.falling) { c.position.y = Math.max(0, c.position.y - dt * 18); if (!c.position.y) c.userData.falling = false; }
+          // Laser vision burns saucers down; ice breath slows them.
+          if (powers) {
+            const targets = ufos.filter((u) => !u.down).map((u) => ({ id: u, position: u.model.position, radius: 5.5 }));
+            for (const h of powers.update(dt, m, controls, targets)) {
+              if (h.kind === 'laser') h.id.hp -= h.dt * 2.2;
+              if (h.kind === 'ice') h.id.slow = Math.max(h.id.slow, h.slow);
+            }
+          }
           if (ufos.every((u) => u.down)) { hud.toast(`Wave ${wave} cleared!`, 'good'); spawnWave(); }
           hud.set({ score, objective: `Wave ${wave} · ${ufos.filter((u) => !u.down).length} saucers left` });
         },
-        results: () => ({ score: Math.round(score * practice), rank: rankFor(score * practice, [6000, 4200, 2600, 1200]), subtitle: downed > 20 ? 'The city never knew how close it came.' : 'They will be back.', lines: [{ label: 'Saucers down', value: String(downed) }, { label: 'Things abducted', value: String(lost) }] }),
+        results: () => (powers?.dispose(), { score: Math.round(score * practice), rank: rankFor(score * practice, [5200, 3600, 2200, 1000]), subtitle: downed > 20 ? 'The city never knew how close it came.' : 'They will be back.', lines: [{ label: 'Saucers down', value: String(downed) }, { label: 'Things abducted', value: String(lost) }] }),
       };
     },
   },
@@ -605,10 +638,10 @@ export const MODES = {
     title: 'Just wander',
     intro: (m) => [
       m.year === '1900' ? 'Nothing much. Just walking, dodging the carriages, looking up.' : 'Nothing much. I was just walking around, watching everyone.',
-      'Little memories are lying around the city. Pick them up. Press M when you want to wake up.',
+      'Little memories are lying around the city. Pick them up. Press M whenever you want to go back and choose something else, and T to let time pass.',
     ],
-    controls: 'WASD move · number keys switch powers · E use · M wake up',
-    create({ practice = 1, upgrades = new Set(), group, rng, life, town, controls, progress, switchTo, talkTo, found, clock, cash, earn, scale, inspectPlace }) {
+    controls: 'WASD move · number keys switch powers · E talk / buy · J journal · T let time pass · M back to your day',
+    create({ practice = 1, upgrades = new Set(), group, rng, life, town, controls, progress, switchTo, talkTo, found, clock, cash, earn, scale, inspectPlace, passTime, roamTick, openJournal, questTarget }) {
       const kept = progress.kept.filter((g) => PERKS[g]);
       const rides = kept.filter((g) => PERKS[g].mover);
       const money = kept.includes('heist');
@@ -620,12 +653,15 @@ export const MODES = {
       return {
         spawn: { at: V(-5, 0, 40), heading: 0 },
         objective: kept.length ? 'Wander. Your kept powers are on the number keys.' : 'Wander. Score a B or better to keep a power.',
-        guide: (m) => { let best = null, bd = Infinity; for (const o of orbs) if (o.visible) { const d = o.position.distanceToSquared(m.feet); if (d < bd) { bd = d; best = o.position; } } return best; },
+        guide: () => questTarget?.() || null,
         update(dt, m, hud) {
           t += dt;
           if (t < dt * 1.5) { show(hud); hud.set({ score: null, time: null }); }
+          roamTick?.(dt, m, hud);
+          if (controls.took('KeyJ')) { openJournal?.(); return; }
           for (const sl of slots) if (controls.took(`Digit${sl.key}`) && sl.id !== active) { active = sl.id; switchTo(sl.game); show(hud); hud.toast(sl.label); return; }
-          if (controls.took('KeyM')) { this.done = true; return; }
+          if (controls.took('KeyM') || controls.took('Backspace')) { this.done = true; return; }
+          if (controls.took('KeyT')) { passTime(); return; }
           const body = m.feet.add(V(0, 1, 0));
           for (const o of orbs) if (o.visible && body.distanceTo(o.position) < 2.2) { o.visible = false; picked++; found(25); hud.toast('A little memory  +25', 'good'); }
           hud.clock?.(clock?.());
@@ -649,7 +685,7 @@ export const MODES = {
             else {
               if (!money) earn(-price); const model = life.take(v); active = 'bought'; switchTo('bought', model, v.kind); show(hud); hud.prompt(null); hud.toast(`Sold. It's yours.`, 'good'); }
           }
-          hud.set({ objective: `${picked} memories found · ${slots.find((sl) => sl.id === active)?.label || 'Driving'}` });
+          hud.set({ objective: `${slots.find((sl) => sl.id === active)?.label || 'Driving'} · M: back to your day · T: let time pass · J: journal` });
         },
         results: () => ({ score: picked * 25, rank: null, subtitle: 'You woke up.', lines: [{ label: 'Memories found', value: String(picked) }] }),
       };

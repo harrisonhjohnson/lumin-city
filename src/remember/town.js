@@ -93,47 +93,59 @@ export function createTown({ city = 'nyc', era = '2000', seed = WORLD.seed, save
   const names = NAMES[city]?.[era] || NAMES.nyc[2000];
   const jobs = JOBS[era] || JOBS[2000];
 
-  let residents, owners = saved?.owners || null;
-  if (saved?.residents?.length) residents = saved.residents;
-  else {
-    residents = [];
-    const freeShops = [...shops];
-    const COUNT = 240;
-    for (let i = 0; i < COUNT; i++) {
-      const home = homes[Math.floor(rng() * homes.length)];
-      // The first few residents keep the shops, so every shop has a keeper; the rest draw a job.
-      const others = jobs.filter((j) => j[0] !== 'Shopkeeper');
-      const job = i < shops.length ? jobs.find((j) => j[0] === 'Shopkeeper') : others[Math.floor(rng() * others.length)];
-      const shop = i < shops.length ? freeShops.shift() : null;
-      const work = shop || (job[1] === 'office' ? offices[Math.floor(rng() * offices.length)] : job[1] === 'shop' ? shops[Math.floor(rng() * shops.length)] : null);
-      const first = names.first[Math.floor(rng() * names.first.length)], last = names.last[Math.floor(rng() * names.last.length)];
-      const wage = Math.round(job[4] * (0.8 + rng() * 0.4));
-      residents.push({
-        id: `r${String(i).padStart(3, '0')}`, first, last, name: `${first} ${last}`,
-        job: job[0], jobKind: job[1], shift: [job[2], job[3]], wage,
-        home: home.id, work: work?.id || null, shop: shop?.id || null,
-        look: { seed: 1 + Math.floor(rng() * 1e6) },
-        money: Math.round((wage * (2 + rng() * 6) + 20 * scale) * 100) / 100,
-        inventory: { food: Math.floor(rng() * 4), goods: Math.floor(rng() * 3) },
-        needs: { hunger: rng() * 0.5, energy: 0.5 + rng() * 0.5, fun: 0.3 + rng() * 0.6, social: 0.3 + rng() * 0.6 },
-        traits: { thrift: rng(), sociable: rng(), diligent: rng(), kind: rng(), honest: rng() },
-        friends: [], landlord: null, rent: 0,
-        opinion: 0, met: false, log: [],
-        act: { kind: 'idle', at: home.id, until: 0 },
-        stats: { earned: 0, spent: 0 },
-      });
-    }
-    // Friends, and buildings with owners: most homes belong to one of the richer residents and
-    // everyone living there pays them rent; a few are owned by the people who live in them.
-    const rich = [...residents].sort((a, b) => b.money - a.money).slice(0, 20);
-    for (const r of residents) while (r.friends.length < 3) { const f = residents[Math.floor(rng() * residents.length)]; if (f !== r && !r.friends.includes(f.id)) r.friends.push(f.id); }
-    owners = {};
-    for (const h of homes) { const living = residents.filter((x) => x.home === h.id); owners[h.id] = rng() < 0.8 || !living.length ? rich[Math.floor(rng() * rich.length)].id : living[0].id; }
-    for (const s of shops) owners[s.id] = residents.find((k) => k.shop === s.id)?.id || null;
-    for (const r of residents) { const o = owners[r.home]; r.landlord = o && o !== r.id ? o : null; r.rent = r.landlord ? Math.round(r.wage * (0.25 + rng() * 0.15) * 100) / 100 + 4 * scale : 0; }
+  // The roster is always generated (it's deterministic); a saved town keeps its own people and
+  // only takes the newcomers past its count — towns saved when the city had fewer residents grow.
+  const COUNT = 600;
+  const roster = [], freeShops = [...shops];
+  const others = jobs.filter((j) => j[0] !== 'Shopkeeper');
+  for (let i = 0; i < COUNT; i++) {
+    const home = homes[Math.floor(rng() * homes.length)];
+    // The first few residents keep the shops, so every shop has a keeper; the rest draw a job.
+    const job = i < shops.length ? jobs.find((j) => j[0] === 'Shopkeeper') : others[Math.floor(rng() * others.length)];
+    const shop = i < shops.length ? freeShops.shift() : null;
+    const work = shop || (job[1] === 'office' ? offices[Math.floor(rng() * offices.length)] : job[1] === 'shop' ? shops[Math.floor(rng() * shops.length)] : null);
+    const first = names.first[Math.floor(rng() * names.first.length)], last = names.last[Math.floor(rng() * names.last.length)];
+    const wage = Math.round(job[4] * (0.8 + rng() * 0.4));
+    roster.push({
+      id: `r${String(i).padStart(3, '0')}`, first, last, name: `${first} ${last}`,
+      job: job[0], jobKind: job[1], shift: [job[2], job[3]], wage,
+      home: home.id, work: work?.id || null, shop: shop?.id || null,
+      look: { seed: 1 + Math.floor(rng() * 1e6) },
+      money: Math.round((wage * (2 + rng() * 6) + 20 * scale) * 100) / 100,
+      inventory: { food: Math.floor(rng() * 4), goods: Math.floor(rng() * 3) },
+      needs: { hunger: rng() * 0.5, energy: 0.5 + rng() * 0.5, fun: 0.3 + rng() * 0.6, social: 0.3 + rng() * 0.6 },
+      traits: { thrift: rng(), sociable: rng(), diligent: rng(), kind: rng(), honest: rng() },
+      friends: [], landlord: null, rent: 0,
+      opinion: 0, met: false, log: [], said: [],
+      act: { kind: 'idle', at: home.id, until: 0 },
+      stats: { earned: 0, spent: 0 },
+    });
   }
+  // Friends, and buildings with owners: most homes belong to one of the richer residents and
+  // everyone living there pays them rent; a few are owned by the people who live in them.
+  const rich = [...roster].sort((a, b) => b.money - a.money).slice(0, 30);
+  for (const r of roster) while (r.friends.length < 3) { const f = roster[Math.floor(rng() * roster.length)]; if (f !== r && !r.friends.includes(f.id)) r.friends.push(f.id); }
+  const freshOwners = {};
+  for (const h of homes) { const living = roster.filter((x) => x.home === h.id); freshOwners[h.id] = rng() < 0.8 || !living.length ? rich[Math.floor(rng() * rich.length)].id : living[0].id; }
+  for (const sh of shops) freshOwners[sh.id] = roster.find((k) => k.shop === sh.id)?.id || null;
+  const rentFor = (r, o) => (o && o !== r.id ? Math.round(r.wage * (0.25 + rng() * 0.15) * 100) / 100 + 4 * scale : 0);
+
+  let residents, owners;
+  if (saved?.residents?.length) {
+    residents = saved.residents;
+    owners = saved.owners || Object.fromEntries(residents.filter((r) => r.landlord).map((r) => [r.home, r.landlord]));   // saves from before ownership
+    for (const r of roster.slice(residents.length)) {
+      const o = owners[r.home] ?? freshOwners[r.home];
+      r.landlord = o && o !== r.id ? o : null; r.rent = rentFor(r, o);
+      r.act = { kind: 'idle', at: r.home, until: (saved.clock || 0) + rng() * 2 * H };
+      residents.push(r);
+    }
+  } else {
+    residents = roster; owners = freshOwners;
+    for (const r of residents) { const o = owners[r.home]; r.landlord = o && o !== r.id ? o : null; r.rent = rentFor(r, o); }
+  }
+  for (const r of residents) r.said ||= [];
   const people = new Map(residents.map((r) => [r.id, r]));
-  if (!owners) { owners = {}; for (const r of residents) if (r.landlord) owners[r.home] = r.landlord; }   // saves from before ownership
   // What happened today that the player should hear about at night (main.js reads, then clears).
   const ledger = saved?.ledger || { rent: 0, unpaid: [], events: [] };
   const shopStock = saved?.shops || Object.fromEntries(shops.map((s) => [s.id, { till: 0, stock: 90 }]));
@@ -151,6 +163,7 @@ export function createTown({ city = 'nyc', era = '2000', seed = WORLD.seed, save
     shopName(placeId) { const p = byId.get(placeId); if (!p?.shop) return null; const keeper = residents.find((r) => r.shop === placeId); return `${keeper ? keeper.last + '\'s ' : ''}${SHOP_KINDS[p.shop].label[era] || SHOP_KINDS[p.shop].label[2000]}`; },
     tick, decide, where, outdoors, note, pay, transfer, hail, dropOff, save, stockOf: (id) => shopStock[id],
     owners, ledger, onDay: [], civic: saved?.civic || null,
+    quests: saved?.quests || [], loot: saved?.loot || null, collection: saved?.collection || {},
     ownerOf: (placeId) => owners[placeId] ?? null,
     tenantsOf: (placeId) => residents.filter((r) => r.home === placeId),
   };
@@ -321,7 +334,7 @@ export function createTown({ city = 'nyc', era = '2000', seed = WORLD.seed, save
     return best?.id || 'park';
   }
 
-  function save() { return { v: 1, clock: town.clock, day: town.day, residents, shops: shopStock, owners, ledger, civic: town.civic }; }
+  function save() { return { v: 1, clock: town.clock, day: town.day, residents, shops: shopStock, owners, ledger, civic: town.civic, quests: (town.quests || []).filter((q) => q.state === 'active' || q.state === 'offered' || town.day - (q.doneDay ?? q.day) < 14), loot: town.loot, collection: town.collection }; }
 
   // A fresh town runs its morning before you arrive, so people are already out and about.
   if (!saved) {
