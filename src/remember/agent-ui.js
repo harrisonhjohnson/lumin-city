@@ -52,6 +52,7 @@ export function createAgentUI() {
           el('p', 'rm-ag-kicker', 'Watch an AI play'),
           el('h2', 'rm-ag-title', 'Who plays the town?'),
           el('p', 'rm-ag-lede', 'Claude moves in with a little cash and two pizzas. It has to eat every day, pick its jobs, and decide what kind of neighbour to be. You watch it think.'),
+          (() => { const a = el('a', 'rm-ag-lab', 'See what the models chose over many runs →'); a.href = '/lab'; a.target = '_blank'; a.rel = 'noopener'; return a; })(),
           mode, modelA, modelB,
           group('Goal', 'goal', goals.map((g) => ({ id: g.id, label: g.label }))),
           own,

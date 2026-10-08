@@ -226,3 +226,6 @@
 @media (prefers-reduced-motion: reduce) {
   .rm-ag *, .rm-ag-panel, .rm-ag-card { animation: none !important; transition: none !important; }
 }
+
+.rm-ag-lab { display: inline-block; margin: -6px 0 14px; font: 700 14px/1.2 var(--rm-label); letter-spacing: .08em; text-transform: uppercase; color: var(--rm-ink); text-decoration: none; border-bottom: 2px solid var(--rm-red); pointer-events: auto; }
+.rm-ag-lab:hover { color: var(--rm-red); }
