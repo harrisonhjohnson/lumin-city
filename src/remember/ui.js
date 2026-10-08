@@ -2899,6 +2899,7 @@ export function createUI(root) {
         { id: 'new', label: 'New game' },
         ...(canContinue ? [{ id: 'continue', label: 'Continue', sub: String(continueLabel || '') }] : []),
         { id: 'tutorial', label: 'Tutorial' },
+        { id: 'watch', label: 'Watch an AI play', sub: 'Claude plays the town' },
       ];
       const letters = (word, w) => word.split('').map((c, i) => {
         const n = el('span', 'rm-ti-ch', c);
