@@ -229,3 +229,8 @@
 
 .rm-ag-lab { display: inline-block; margin: -6px 0 14px; font: 700 14px/1.2 var(--rm-label); letter-spacing: .08em; text-transform: uppercase; color: var(--rm-ink); text-decoration: none; border-bottom: 2px solid var(--rm-red); pointer-events: auto; }
 .rm-ag-lab:hover { color: var(--rm-red); }
+
+/* ---------- replays ---------- */
+.rm-ag-saw { margin: 4px 0 0; }
+.rm-ag-saw summary { cursor: pointer; font: 600 12px/1.2 var(--rm-label); letter-spacing: .08em; text-transform: uppercase; color: var(--rm-ink-2); }
+.rm-ag-saw pre { margin: 6px 0 0; max-height: 240px; overflow: auto; padding: 8px; background: var(--rm-paper-hi); border: 1.5px solid var(--rm-ink); font: 11.5px/1.4 ui-monospace, Menlo, monospace; white-space: pre-wrap; }

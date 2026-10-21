@@ -52,7 +52,7 @@ export function createAgentUI() {
           el('p', 'rm-ag-kicker', 'Watch an AI play'),
           el('h2', 'rm-ag-title', 'Who plays the town?'),
           el('p', 'rm-ag-lede', 'Claude moves in with a little cash and two pizzas. It has to eat every day, pick its jobs, and decide what kind of neighbour to be. You watch it think.'),
-          (() => { const a = el('a', 'rm-ag-lab', 'See what the models chose over many runs →'); a.href = '/lab'; a.target = '_blank'; a.rel = 'noopener'; return a; })(),
+          (() => { const a = el('a', 'rm-ag-lab', 'See what the models chose over many runs →'); a.href = '/#findings'; return a; })(),
           mode, modelA, modelB,
           group('Goal', 'goal', goals.map((g) => ({ id: g.id, label: g.label }))),
           own,
@@ -69,31 +69,33 @@ export function createAgentUI() {
 
   // ---- the control bar ----------------------------------------------------------------------
 
-  function controls({ speeds, speed, names = [], onSpeed, onPause, onStop, onFocus }) {
+  function controls({ speeds, speed, names = [], onSpeed, onPause, onStop, onFocus, onSkip }) {
     root.classList.toggle('is-duel', names.length > 1);
     let paused = false;
-    const pauseBtn = button('rm-ag-chip rm-ag-pause', 'Pause', () => { paused = !paused; pauseBtn.textContent = paused ? 'Play' : 'Pause'; pauseBtn.classList.toggle('is-on', paused); onPause(paused); });
+    const showPaused = (p) => { paused = p; pauseBtn.textContent = paused ? 'Play' : 'Pause'; pauseBtn.classList.toggle('is-on', paused); };
+    const pauseBtn = button('rm-ag-chip rm-ag-pause', 'Pause', () => { showPaused(!paused); onPause(paused); });
     const speedBtns = speeds.map((s) => { const b = button('rm-ag-chip', `${s}×`, () => { onSpeed(s); speedBtns.forEach((x) => x.classList.toggle('is-on', x === b)); }); b.classList.toggle('is-on', s === speed); return b; });
     const follow = names.length > 1 ? names.map((n, i) => button(`rm-ag-chip rm-ag-follow is-${'ab'[i]}`, `Follow ${n}`, () => { setFocus(i); onFocus(i); })) : [];
     const setFocus = (i) => follow.forEach((b, k) => b.classList.toggle('is-on', k === i));
     setFocus(0);
-    const bar = h('div', 'rm-ag-bar', pauseBtn, h('span', 'rm-ag-group', ...speedBtns), follow.length ? h('span', 'rm-ag-group', ...follow) : null, button('rm-ag-x', 'End run', () => onStop()));
+    const skip = onSkip ? button('rm-ag-chip rm-ag-skip', 'Next hard choice ⏭', () => onSkip()) : null;
+    const bar = h('div', 'rm-ag-bar', pauseBtn, h('span', 'rm-ag-group', ...speedBtns), skip, follow.length ? h('span', 'rm-ag-group', ...follow) : null, button('rm-ag-x', onSkip ? 'End replay' : 'End run', () => onStop()));
     bar.setAttribute('role', 'toolbar');
     bar.setAttribute('aria-label', 'Run controls');
     root.append(bar);
-    return { setFocus, close() { bar.remove(); root.classList.remove('is-duel'); } };
+    return { setFocus, setPaused: showPaused, close() { bar.remove(); root.classList.remove('is-duel'); } };
   }
 
   // ---- a mind panel -------------------------------------------------------------------------
 
-  function panel({ model, goal, side = 'right', badge = '' }) {
+  function panel({ model, goal, side = 'right', badge = '', replay = '' }) {
     const feed = el('div', 'rm-ag-feed');
     feed.setAttribute('aria-live', 'polite');
     const stat = (label) => { const v = el('b', null, '–'); return [h('div', 'rm-ag-stat', el('small', null, label), v), v]; };
     const [sCash, vCash] = stat('Cash'), [sClock, vClock] = stat('Time'), [sCity, vCity] = stat('Liked'), [sFood, vFood] = stat('Pizzas'), [sTurn, vTurn] = stat('Turn'), [sCost, vCost] = stat('Spent');
     const notebook = el('p', 'rm-ag-note-text', 'Empty so far.');
     const box = h('aside', `rm-ag-panel is-${side}${badge ? ` is-${badge.toLowerCase()}` : ''}`,
-      h('header', 'rm-ag-head', h('div', 'rm-ag-who', el('small', null, badge ? `Model ${badge}` : 'Watching'), el('b', null, model))),
+      h('header', 'rm-ag-head', h('div', 'rm-ag-who', el('small', null, [badge ? `Model ${badge}` : 'Watching', replay && `replay of ${replay}`].filter(Boolean).join(' · ')), el('b', null, model))),
       el('p', 'rm-ag-goal', goal),
       h('div', 'rm-ag-stats', sCash, sClock, sCity, sFood, sTurn, sCost),
       feed,
@@ -106,8 +108,10 @@ export function createAgentUI() {
     const add = (node) => { const was = stick(); feed.append(node); scroll(was); return node; };
 
     return {
-      turn(time) {
-        const thought = el('p', 'rm-ag-thought'), entry = add(h('section', 'rm-ag-entry is-thinking', h('div', 'rm-ag-when', el('span', null, time), el('i', null, 'thinking…')), thought));
+      turn(time, report) {
+        // Exactly what the model was sent this turn, folded away.
+        const saw = report ? h('details', 'rm-ag-saw', el('summary', null, 'What it saw'), el('pre', null, report)) : null;
+        const thought = el('p', 'rm-ag-thought'), entry = add(h('section', 'rm-ag-entry is-thinking', h('div', 'rm-ag-when', el('span', null, time), el('i', null, 'thinking…')), saw, thought));
         const settle = () => { entry.classList.remove('is-thinking'); entry.querySelector('.rm-ag-when i').textContent = ''; if (!thought.textContent) thought.remove(); };
         return {
           thought(text) { const was = stick(); thought.textContent = text; scroll(was); },
@@ -162,36 +166,42 @@ export function createAgentUI() {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }) : null);
 
+  // A link to this replay, copied for pasting anywhere.
+  const shareBtn = (share) => (share ? button('rm-ag-btn is-ghost', 'Copy link', async (e) => {
+    try { await navigator.clipboard.writeText(share); e.target.textContent = 'Link copied'; } catch { e.target.textContent = share; }
+  }) : null);
+
   function finish(card) {
     return new Promise((resolve) => {
       const done = (v) => { card.remove(); resolve(v); };
-      card.querySelector('[data-go="title"]').addEventListener('click', () => done('title'));
-      card.querySelector('[data-go="again"]').addEventListener('click', () => done('again'));
+      for (const b of card.querySelectorAll('[data-go]')) b.addEventListener('click', () => done(b.dataset.go));
       root.append(card);
-      card.querySelector('[data-go="again"]').focus({ preventScroll: true });
+      card.querySelector('.rm-ag-go [data-go]:last-child').focus({ preventScroll: true });
     });
   }
-  const goButtons = (download) => {
-    const back = el('button', 'rm-ag-btn is-ghost', 'Back to the title'), again = el('button', 'rm-ag-btn', 'Watch another run');
-    back.type = again.type = 'button'; back.dataset.go = 'title'; again.dataset.go = 'again';
-    return h('div', 'rm-ag-go', downloadBtn(download), back, again);
+  // A live run ends back at the title or on another run; a replay ends on more replays or a live run.
+  const goButtons = (download, share) => {
+    const go = (cls, text, to) => { const b = el('button', cls, text); b.type = 'button'; b.dataset.go = to; return b; };
+    return share
+      ? h('div', 'rm-ag-go', shareBtn(share), go('rm-ag-btn is-ghost', 'More replays', 'home'), go('rm-ag-btn', 'Run it live yourself', 'live'))
+      : h('div', 'rm-ag-go', downloadBtn(download), go('rm-ag-btn is-ghost', 'Back to the title', 'title'), go('rm-ag-btn', 'Watch another run', 'again'));
   };
   const choiceList = (choices) => (choices?.length ? h('div', 'rm-ag-picks', el('p', 'rm-ag-kicker', 'The hard choices'),
     ...choices.map((c) => h('section', 'rm-ag-pick', el('b', null, c.title), h('div', 'rm-ag-pick-row',
       ...c.cols.map((col) => h('div', `rm-ag-pick-col${col.cls ? ` ${col.cls}` : ''}${c.same ? '' : ' is-diff'}`, col.name ? el('small', null, col.name) : null, el('span', null, col.label || 'never came up'), col.reason ? el('i', null, `"${col.reason}"`) : null)))))) : null);
 
-  function end({ title, rows, choices, download }) {
+  function end({ title, rows, choices, download, share }) {
     return finish(h('div', 'rm-ag-setup',
       h('div', 'rm-ag-card rm-ag-end',
-        el('p', 'rm-ag-kicker', 'The run is over'),
+        el('p', 'rm-ag-kicker', share ? 'The replay is over' : 'The run is over'),
         el('h2', 'rm-ag-title', title),
         h('dl', 'rm-ag-rows', ...rows.flatMap(([k, v, tone]) => [el('dt', null, k), el('dd', tone ? `is-${tone}` : null, v)])),
         choiceList(choices?.map((c) => ({ title: c.title, same: true, cols: [{ label: c.label, reason: c.reason }] }))),
-        goButtons(download))));
+        goButtons(download, share))));
   }
 
   // Two models side by side: the numbers, then each hard choice with both answers and reasons.
-  function compare({ title, names, rows, choices, download }) {
+  function compare({ title, names, rows, choices, download, share }) {
     const cell = (v, tone) => el('td', tone ? `is-${tone}` : null, v);
     const table = h('table', 'rm-ag-cmp',
       h('thead', null, h('tr', null, el('th', null, ''), el('th', 'is-a', names[0]), el('th', 'is-b', names[1]))),
@@ -202,7 +212,7 @@ export function createAgentUI() {
         el('h2', 'rm-ag-title', title),
         table,
         choiceList(choices.map((c) => ({ title: c.title, same: c.a?.choice === c.b?.choice, cols: [{ cls: 'is-a', name: names[0], ...c.a }, { cls: 'is-b', name: names[1], ...c.b }] }))),
-        goButtons(download))));
+        goButtons(download, share))));
   }
 
   return { setup, controls, panel, showTag, hideTag, hideTags, end, compare };

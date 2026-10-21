@@ -1,4 +1,4 @@
-import { MODELS, SYSTEM, TOOLS } from '../src/remember/agent-brain.js';
+import { LIVE_MODELS, SYSTEM, TOOLS } from '../src/remember/agent-brain.js';
 
 // One agent turn: the browser sends the turn's report, this adds the Lumin prompt and tools,
 // asks the model via OpenRouter, and streams the reply (thinking, then the tool call) straight
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
   if (!key) return send(res, 503, 'The agent is offline: no model key on this server.');
   let body;
   try { body = await readJson(req); } catch { return send(res, 400, 'Bad JSON'); }
-  const model = MODELS.find((m) => m.id === body.model);
+  const model = LIVE_MODELS.find((m) => m.id === body.model);
   if (!model) return send(res, 400, 'Unknown model');
   const report = String(body.report || '').slice(0, MAX_REPORT);
   if (!report) return send(res, 400, 'Empty report');
@@ -68,6 +68,8 @@ export default async function handler(req, res) {
       }),
     });
   } catch { return send(res, 502, 'Could not reach the model.'); }
+  // 402 is out of credit; 403 is the key's own spending limit. Either way live runs wait and the replays still play.
+  if (upstream.status === 402 || upstream.status === 403) return send(res, 503, 'The agent is offline: live runs are out of credit for now. The replays on the front page still play.');
   if (!upstream.ok || !upstream.body) return send(res, 502, `The model said no (${upstream.status}): ${(await upstream.text()).slice(0, 200)}`);
 
   res.statusCode = 200;

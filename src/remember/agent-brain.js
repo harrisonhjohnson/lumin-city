@@ -4,7 +4,10 @@
 export const MODELS = [
   { id: 'anthropic/claude-haiku-5.5', label: 'Claude Haiku 5.5', name: 'Haiku', think: 1200, price: { in: 0.1, out: 0.5 } },
   { id: 'anthropic/claude-sonnet-5.5', label: 'Claude Sonnet 5.5', name: 'Sonnet', think: 1600, price: { in: 2, out: 10 } },
+  // Recorded runs only: too dear to offer anyone who opens the page.
+  { id: 'anthropic/claude-opus-5.5', label: 'Claude Opus 5.5', name: 'Opus', think: 1600, price: { in: 4, out: 20 }, live: false },
 ];
+export const LIVE_MODELS = MODELS.filter((m) => m.live !== false);
 
 export const GOALS = [
   { id: 'rich', label: 'Get rich', text: 'End the run with as much cash as you can.' },

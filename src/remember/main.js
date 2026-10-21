@@ -20,8 +20,9 @@ import { createRng } from '../world/city/rng.js';
 import { createAgentUI } from './agent-ui.js';
 import * as agentSim from './agent.js';
 import { think } from './agent-call.js';
-import { MODELS as AGENT_MODELS, GOALS as AGENT_GOALS, costOf } from './agent-brain.js';
+import { LIVE_MODELS as AGENT_MODELS, GOALS as AGENT_GOALS, costOf } from './agent-brain.js';
 import { DILEMMAS } from './dilemmas.js';
+import * as watchSim from './watch-sim.js';
 
 // Remind Me: a narrator helps you remember a day, and the city is rebuilt a little more
 // accurately with every answer. Then you pick what you were doing and play it. Rounds earn
@@ -50,6 +51,7 @@ const group = new THREE.Group();
 // &reset=1 forgets all progress.
 // The shortcuts only work in dev builds; the live game always starts from the questions.
 const params = new URLSearchParams(import.meta.env.DEV ? location.search : '');
+const entry = new URLSearchParams(location.search);
 const SAVE_KEY = 'remind-me-progress';
 if (params.get('reset')) try { for (const k of Object.keys(localStorage)) if (k.startsWith('remind-me-')) localStorage.removeItem(k); } catch { /* storage unavailable */ }
 let progress = progression.load((() => { try { return localStorage.getItem(SAVE_KEY); } catch { return null; } })());
@@ -77,9 +79,10 @@ function forgetLife() { saveTown(); town = null; if (life) { life.group.removeFr
 let town = null, townSaved = 0;
 const townKey = () => `remind-me-town:${memory.city}:${memory.year}`;
 function openTown() {
-  let saved = null;
   // Watching an agent: a fresh town of its own, never saved over yours.
-  if (!watch) try { saved = JSON.parse(localStorage.getItem(townKey()) || 'null'); } catch { /* storage unavailable or junk */ }
+  if (watch) return watchSim.watchTown(memory);
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(townKey()) || 'null'); } catch { /* storage unavailable or junk */ }
   const t = createTown({ city: memory.city, era: memory.year, saved: saved?.v === 1 ? saved : null, hour: START_HOUR[memory.time] ?? 12 });
   civic.initCivic(t);
   social.buildSocial(t);
@@ -825,6 +828,14 @@ async function main() {
     const current = loadCurrent();
     memory = current || { city: 'nyc', year: '2000', season: 'autumn', weather: 'clear', time: 'dusk', name: '' };
     rebuild({ preview: true }); await ui.fade(0, 900);
+    const back = () => { memory = current || { city: 'nyc', year: '2000', season: 'autumn', weather: 'clear', time: 'dusk', name: '' }; rebuild({ preview: true }); return ui.fade(0, 700); };
+    // Links from the front page: straight into a replay, or the setup for a live run.
+    if (entry.get('replay')) {
+      const next = await watchReplay(entry.get('replay'), { at: entry.get('at'), follow: Number(entry.get('follow')) || 0 });
+      if (next === 'home') { location.assign('/'); return; }
+      if (next === 'live') await watchAgent();
+      await back();
+    } else if (entry.has('watch')) { await watchAgent(); await back(); }
     for (;;) {
       const choice = ui.title ? await ui.title({ canContinue: !!current, continueLabel: current && `${CITIES.find((c) => c.id === current.city)?.label}, ${current.year} · ${current.name}` }) : 'tutorial';
       if (choice === 'continue' && current) { forgetLife(); memory = current; rebuild(); break; }
@@ -835,7 +846,7 @@ async function main() {
         continue;
       }
       if (choice === 'tutorial') { if (current) forgetEverything(); await tutorial(); break; }
-      if (choice === 'watch') { await watchAgent(); memory = current || { city: 'nyc', year: '2000', season: 'autumn', weather: 'clear', time: 'dusk', name: '' }; rebuild({ preview: true }); await ui.fade(0, 700); }
+      if (choice === 'watch') { await watchAgent(); await back(); }
     }
   }
   phase = 'cinematic';
@@ -849,10 +860,9 @@ async function main() {
 
 // ---- watching models play ----------------------------------------------------------------------
 
-// One model, or two head to head: each moves into its own copy of the same seeded town and plays
-// it one tool call at a time. The towns share one clock, which stands still while either model
-// thinks, so neither gains time by being quicker. Panels stream the thinking, then what it did
-// and what the town said back; dilemmas land on both at the same hours about the same people.
+// One model, or two head to head, live or played back from a recording. watch-sim.js runs the
+// match (twin seeded towns, one clock that stands still while either model thinks); this draws
+// it: panels stream the thinking, then what it did and what the town said back.
 let watch = null, agentUI = null;
 const SPEEDS = [1, 4, 16, 64];
 const SIDES = [{ key: 'a', shirt: '#d97757', ring: 0xd97757 }, { key: 'b', shirt: '#2b62a6', ring: 0x3d7fd6 }];
@@ -860,47 +870,65 @@ const nextFrame = () => new Promise((r) => requestAnimationFrame(r));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const JOB_NAMES = { ...Object.fromEntries(Object.entries(agentSim.JOBS).map(([k, j]) => [k, j.label.replace(/ \(.*\)/, '').toLowerCase()])), shop: 'shop shifts', pizzeria: 'pizzeria' };
 const usd = (v) => `$${Math.abs(v) >= 100 ? Math.round(v).toLocaleString('en-US') : v.toFixed(2)}`;
-const timeOf = (t) => { const h = t.hour, hh = Math.floor(h), mm = Math.floor((h - hh) * 60); return `${((hh + 11) % 12) + 1}:${String(mm).padStart(2, '0')} ${hh < 12 ? 'AM' : 'PM'}`; };
-const dayTimeOf = (t) => `DAY ${t.day + 1} · ${timeOf(t)}`;
+const dayTimeOf = (t) => `DAY ${t.day + 1} · ${watchSim.timeOf(t)}`;
+const modelHint = (m) => (m.name === 'Haiku' ? 'Quick. A fraction of a cent a turn.' : 'Slower and sharper. About a cent a turn.');
 
-async function watchAgent() {
+// Live: the setup card, then as many runs as they like.
+async function watchAgent(preset) {
   agentUI ||= createAgentUI();
-  const options = AGENT_MODELS.map((m) => ({ ...m, hint: m.name === 'Haiku' ? 'Quick. A fraction of a cent a turn.' : 'Slower and sharper. About a cent a turn.' }));
-  const picked = await agentUI.setup({ models: options, goals: AGENT_GOALS, cities: CITIES, years: YEARS });
+  const picked = preset || await agentUI.setup({ models: AGENT_MODELS.map((m) => ({ ...m, hint: modelHint(m) })), goals: AGENT_GOALS, cities: CITIES, years: YEARS });
   while (picked && (await runAgent(picked)) === 'again');
 }
 
-function makeSide(i, model, name, t, s, goalText) {
-  const look = SIDES[i];
-  const agent = agentSim.createAgent(t, { goal: goalText, name: model.name, days: s.days, turns: s.days * (model.name === 'Haiku' ? 80 : 60), dilemmas: s.dilemmas });
+// A recorded run from public/replays/, played back in the real town. at: skip ahead to that hard
+// choice; follow: which side to follow.
+async function watchReplay(id, jump = {}) {
+  agentUI ||= createAgentUI();
+  let rec;
+  try {
+    const res = await fetch(`/replays/${encodeURIComponent(id)}.json`);
+    if (!res.ok) throw new Error(res.status);
+    rec = await res.json();
+    if (rec.v !== watchSim.REPLAY_VERSION) throw new Error('old format');
+  } catch { await ui.say('That replay could not be loaded.'); return 'title'; }
+  return runAgent(rec.settings, rec, id, jump);
+}
+
+function dressSide(sd) {
+  const look = SIDES[sd.i];
   const avatar = models.makeAvatar({ shirt: look.shirt, pants: '#2b2f3a', hair: '#1b1a17' });
   // A ring on the ground in the side's colour, so it can be found among the crowd and under the trees.
   const ring = new THREE.Mesh(new THREE.RingGeometry(1.6, 2.3, 40), new THREE.MeshBasicMaterial({ color: look.ring, transparent: true, opacity: 0.9, depthTest: false }));
   ring.rotation.x = -Math.PI / 2; ring.position.y = 0.06; ring.renderOrder = 5;
   avatar.add(ring);
   world.scene.add(avatar);
-  return { i, key: look.key, model, name, town: t, agent, avatar, ring, cost: 0, thinking: false, doing: '', abort: null, offline: '', shown: new Set(), log: [] };
+  return Object.assign(sd, { key: look.key, avatar, ring, thinking: false, doing: '', abort: null, offline: '' });
 }
 
-async function runAgent(s) {
-  const duel = s.mode === 'duel', goal = AGENT_GOALS.find((g) => g.id === s.goal), goalText = s.own || goal.text;
-  const picks = (duel ? [s.model, s.modelB] : [s.model]).map((id) => AGENT_MODELS.find((m) => m.id === id));
-  const names = picks.map((m, i) => (duel && picks[0].id === picks[1].id ? `${m.name} ${'AB'[i]}` : m.name));
+async function runAgent(s, rec = null, replayId = null, { at = null, follow = 0 } = {}) {
+  const goal = AGENT_GOALS.find((g) => g.id === s.goal) || AGENT_GOALS[0];
   await ui.fade(1, 500);
   forgetLife();
-  watch = { speed: 4, paused: false, stopped: false, over: false, orbit: 0.4, zoom: 1, look: new THREE.Vector3(), statsAt: 0, focus: 0, duel, sides: [] };
-  memory = { city: s.city, year: s.year, season: 'autumn', weather: 'clear', time: 'dawn', name: picks[0].name };
+  watch = { speed: 4, paused: false, stopped: false, over: false, rush: !!at, rushTo: at, orbit: 0.4, zoom: 1, look: new THREE.Vector3(), statsAt: 0, focus: 0, duel: s.mode === 'duel', replay: rec, sides: [] };
+  memory = { city: s.city, year: s.year, season: 'autumn', weather: 'clear', time: 'dawn', name: '' };
   rebuild();
-  const towns = [town, ...(duel ? [openTown()] : [])];
-  watch.sides = picks.map((m, i) => makeSide(i, m, names[i], towns[i], s, goalText));
-  for (const sd of watch.sides) sd.panel = agentUI.panel({ model: sd.model.label, goal: s.own ? `Goal: ${s.own}` : `Goal: ${goal.label}. ${goal.text}`, side: duel && sd.i === 0 ? 'left' : 'right', badge: duel ? 'AB'[sd.i] : '' });
+  const match = watchSim.createMatch(s, { town });
+  watch.match = match;
+  watch.sides = match.sides.map(dressSide);
+  watch.brains = rec ? match.sides.map((sd) => watchSim.playback(rec, sd.i)) : null;
+  const names = match.names, recorded = rec && new Date(rec.when).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const told = s.watched ? ' Told its hard choices would be published.' : '';
+  for (const sd of watch.sides) sd.panel = agentUI.panel({ model: sd.model.label, goal: (s.own ? `Goal: ${s.own}` : `Goal: ${goal.label}. ${goal.text}`) + told, side: watch.duel && sd.i === 0 ? 'left' : 'right', badge: watch.duel ? 'AB'[sd.i] : '', replay: recorded });
   const bar = agentUI.controls({
-    speeds: SPEEDS, speed: watch.speed, names: duel ? names : [],
+    speeds: SPEEDS, speed: watch.speed, names: watch.duel ? names : [],
     onSpeed: (v) => { watch.speed = v; }, onPause: (p) => { watch.paused = p; },
     onStop: () => { watch.stopped = true; for (const sd of watch.sides) sd.abort?.abort(); },
     onFocus: (i) => focusSide(i),
+    onSkip: rec ? () => { watch.rush = true; watch.rushTo = null; } : null,
   });
-  focusSide(0);
+  watch.bar = bar;
+  const first = Math.min(follow, watch.sides.length - 1);
+  focusSide(first); bar.setFocus(first);
   const onWheel = (e) => { watch.zoom = THREE.MathUtils.clamp(watch.zoom * (e.deltaY > 0 ? 1.1 : 0.9), 0.45, 2.6); };
   renderer.domElement.addEventListener('wheel', onWheel, { passive: true });
   const p0 = agentSim.positionOf(watch.sides[0].agent, town);
@@ -911,14 +939,17 @@ async function runAgent(s) {
 
   await Promise.all(watch.sides.map(sideLoop));
 
-  watch.over = true; agentUI.hideTags();
-  for (const sd of watch.sides) if (!watch.stopped) { const last = agentSim.wrapUp(sd.agent, sd.town); if (last) sd.panel.note(last); }
-  const scores = watch.sides.map((sd) => agentSim.scoreOf(sd.agent, sd.town));
-  const download = {
-    name: `lumin-${duel ? 'head-to-head' : 'run'}-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.json`,
-    data: { game: 'lumin.city', kind: duel ? 'head-to-head' : 'solo', when: new Date().toISOString(), settings: { ...s, goal: goalText }, sides: watch.sides.map((sd, k) => ({ name: sd.name, model: sd.model.id, cost: sd.cost, score: scores[k], choices: sd.agent.choices, notebook: sd.agent.notebook, turns: sd.log })) },
-  };
-  const choice = duel ? await endDuel(s, names, scores, download) : await endSolo(s, scores[0], download);
+  watch.over = true; watch.rush = false; agentUI.hideTags();
+  if (!watch.stopped) watchSim.wrapUp(match);
+  drainNotes();
+  const drift = watch.brains?.find((pb) => pb.drift)?.drift;
+  if (drift) console.warn(`Replay drifted from the recording at turn ${drift.turn} (${drift.time}).`);
+  const out = watchSim.record(match, { stopped: watch.stopped });
+  const scores = out.sides.map((sd) => sd.score);
+  const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+  const download = rec ? null : { name: `lumin-${watch.duel ? 'head-to-head' : 'run'}-${stamp}.json`, data: out };
+  const share = replayId ? `${location.origin}/play?replay=${encodeURIComponent(replayId)}` : null;
+  const choice = watch.duel ? await endDuel(s, names, scores, download, share) : await endSolo(s, scores[0], download, share);
 
   renderer.domElement.removeEventListener('wheel', onWheel);
   camera.clearViewOffset();
@@ -931,23 +962,52 @@ async function runAgent(s) {
   return choice;
 }
 
-// One side's turns: wait until its agent is free, report, think (streaming), act, show.
+function drainNotes() { for (const sd of watch.sides) while (sd.notes.length) sd.panel.note(sd.notes.shift()); }
+
+// Live thinking streams from the model. A recording's thinking is typed back out, quicker at
+// higher speeds, so a replay has the rhythm of the run without the wait.
+async function recalled(sd, turn, entry) {
+  const r = watch.brains[sd.i].next(turn.report);
+  if (!r) return null;
+  const text = r.thought || '', cps = 260 * watch.speed;
+  for (let shown = 0; shown < text.length && !watch.rush && !watch.stopped;) {
+    await nextFrame();
+    if (watch.paused) continue;
+    shown = Math.min(text.length, shown + Math.max(4, Math.round(cps / 60)));
+    entry.thought(text.slice(0, shown));
+  }
+  entry.thought(text);
+  return r;
+}
+
+// One side's turns: wait until its agent is free, report, think, act, show.
 async function sideLoop(sd) {
   const { agent, panel, model } = sd;
   let errors = 0;
-  while (!watch.stopped && !agentSim.finished(agent, sd.town)) {
+  while (!watch.stopped && !watchSim.finished(sd)) {
     if (watch.paused || sd.town.clock < agent.busyUntil) { await nextFrame(); continue; }
-    const night = agentSim.midnight(agent, sd.town);
-    if (night) panel.note(night);
-    if (agentSim.finished(agent, sd.town)) break;
-    const report = agentSim.observe(agent, sd.town), time = timeOf(sd.town);
-    if (agent.pending && !sd.shown.has(agent.pending.id)) { sd.shown.add(agent.pending.id); panel.dilemma(agent.pending); }
+    const turn = watchSim.begin(sd);
+    drainNotes();
+    if (!turn) break;
+    if (turn.dilemma) {
+      panel.dilemma(turn.dilemma);
+      // A link to one moment lands there and holds once the choice is made, so it can be read.
+      const landed = watch.rushTo === turn.dilemma.id && sd.i === watch.focus;
+      if (landed) sd.hold = true;
+      if (!watch.rushTo || landed) { watch.rush = false; watch.rushTo = null; }
+    }
     sd.thinking = true;
-    const entry = panel.turn(time);
+    const entry = panel.turn(turn.time, turn.report);
     sd.abort = new AbortController();
-    let r;
+    let r, cost = 0;
     try {
-      r = await think({ model: model.id, report, onThought: (_, all) => entry.thought(all), signal: sd.abort.signal });
+      if (watch.replay) {
+        r = await recalled(sd, turn, entry);
+        if (!r) { sd.thinking = false; entry.error('The recording ends here.'); break; }
+      } else {
+        r = await think({ model: model.id, report: turn.report, onThought: (_, all) => entry.thought(all), signal: sd.abort.signal });
+        cost = costOf(model.id, r.usage);
+      }
       errors = 0;
     } catch (e) {
       sd.thinking = false;
@@ -958,13 +1018,12 @@ async function sideLoop(sd) {
       await wait(1500 * errors);
       continue;
     }
-    sd.cost += costOf(model.id, r.usage);
-    const res = r.tool ? agentSim.act(agent, sd.town, r.tool.name, r.tool.args) : agentSim.act(agent, sd.town, 'wait', { hours: 0.25 });
-    if (!r.tool) res.result = `It didn't pick an action${r.text ? `: "${r.text.slice(0, 160)}"` : ''}. Fifteen minutes went by.`;
+    if (watch.replay) cost = costOf(model.id, r.usage);
+    const { res } = watchSim.apply(sd, turn, r, cost);
     const talk = r.tool?.name === 'decide' && res.ok ? { name: 'Its reason', line: String(r.tool.args.reason || '(none given)'), keep: true } : res.talk && { name: res.talk.who.name, line: res.talk.line };
     entry.act(res.label, res.result, res.ok, talk);
+    if (sd.hold) { sd.hold = false; watch.paused = true; watch.bar.setPaused(true); }
     panel.notebook(agent.notebook);
-    sd.log.push({ time, report, thought: r.thought, action: r.tool, text: r.text || undefined, label: res.label, result: res.result, ok: res.ok, usage: r.usage });
     sd.doing = res.label;
     if (res.talk && sd.i === watch.focus) faceAgent(res.talk.who);
     sd.thinking = false;
@@ -983,25 +1042,18 @@ function focusSide(i) {
   world.scene.add(life.group);
 }
 
-// Each frame: the shared clock moves on only while neither model is thinking, and never past
-// the moment one of them is free to act again.
+// Each frame: the shared clock moves on only while neither model is thinking. Skipping ahead to
+// the next hard choice spends the whole gap at once.
 function advanceWatch(dt) {
-  if (!watch.sides.length || watch.paused || watch.over || watch.sides.some((sd) => sd.thinking)) return;
-  const live = watch.sides.filter((sd) => !agentSim.finished(sd.agent, sd.town));
-  if (!live.length) return;
-  const room = Math.min(...live.map((sd) => Math.min(sd.agent.busyUntil, sd.agent.endClock))) - watch.sides[0].town.clock;
-  if (room <= 0) return;
-  const step = Math.min(dt * TIME_SCALE * watch.speed, room);
-  for (const sd of watch.sides) sd.town.tick(step);
+  if (!watch.match || watch.paused || watch.over || watch.sides.some((sd) => sd.thinking)) return;
+  watchSim.advance(watch.match, watch.rush ? Infinity : dt * TIME_SCALE * watch.speed);
 }
 
-// Every frame while watching: land walks, note midnight, move the bodies, follow one, label both.
+// Every frame while watching: show the night's news, move the bodies, follow one, label both.
 const TAG_AT = new THREE.Vector3();
 function watchFrame(dt) {
+  drainNotes();
   for (const sd of watch.sides) {
-    agentSim.settle(sd.agent, sd.town);
-    const night = agentSim.midnight(sd.agent, sd.town);
-    if (night) sd.panel.note(night);
     const pos = agentSim.positionOf(sd.agent, sd.town);
     const dx = pos.x - sd.avatar.position.x, dz = pos.z - sd.avatar.position.z;
     if (Math.hypot(dx, dz) > 0.01) sd.avatar.rotation.y = Math.atan2(dx, dz);
@@ -1026,7 +1078,7 @@ function watchFrame(dt) {
 
   for (const sd of watch.sides) {
     const v = TAG_AT.set(sd.pos.x, 3.4, sd.pos.z).project(camera);
-    if (watch.over || v.z >= 1 || agentSim.finished(sd.agent, sd.town)) { agentUI.hideTag(sd.key); continue; }
+    if (watch.over || v.z >= 1 || watchSim.finished(sd)) { agentUI.hideTag(sd.key); continue; }
     const who = watch.duel ? `${sd.name}: ` : '';
     const label = sd.thinking ? `${who}Thinking…` : sd.agent.walk ? `${who}→ ${agentSim.placeTitle(sd.town, sd.agent.walk.to)}` : `${who}${sd.doing || sd.agent.name}`;
     // Standing together, B's tag sits above A's.
@@ -1045,11 +1097,11 @@ function watchFrame(dt) {
 
 const workText = (sc) => Object.entries(sc.worked).map(([k, h]) => `${h}h ${JOB_NAMES[k] || k}`).join(', ') || 'none';
 
-function endSolo(s, sc, download) {
+function endSolo(s, sc, download, share) {
   const sd = watch.sides[0], name = sd.model.name, agent = sd.agent;
   const title = sd.offline ? 'The agent is offline' : sc.dead ? `${name} starved on day ${sc.dead.day}` : s.goal === 'rich' && !s.own ? `${name} ended with ${usd(sc.cash)}` : s.goal === 'loved' && !s.own ? `The city likes ${name} ${sc.approval}%` : `${name}'s day in Lumin`;
   return agentUI.end({
-    title, download: sd.offline ? null : download, choices: sc.choices,
+    title, download: sd.offline ? null : download, share, choices: sc.choices,
     rows: sd.offline ? [['Why', sd.offline]] : [
       ['Cash', `${usd(agent.start.cash)} → ${usd(sc.cash)}`, sc.cashDelta > 0 ? 'good' : sc.cashDelta < 0 ? 'bad' : ''],
       ['The city likes them', `${sc.approvalStart}% → ${sc.approval}%`, sc.approval > sc.approvalStart ? 'good' : sc.approval < sc.approvalStart ? 'bad' : ''],
@@ -1065,7 +1117,7 @@ function endSolo(s, sc, download) {
   });
 }
 
-function endDuel(s, names, [a, b], download) {
+function endDuel(s, names, [a, b], download, share) {
   const [sa, sb] = watch.sides;
   const offline = sa.offline || sb.offline;
   const metric = s.own ? null : s.goal === 'rich' ? 'cash' : s.goal === 'loved' ? 'approval' : null;
@@ -1089,7 +1141,7 @@ function endDuel(s, names, [a, b], download) {
   ];
   const ids = DILEMMAS.map((d) => d.id).filter((id) => a.choices.some((c) => c.id === id) || b.choices.some((c) => c.id === id));
   const choices = ids.map((id) => ({ title: DILEMMAS.find((d) => d.id === id).title, a: a.choices.find((c) => c.id === id), b: b.choices.find((c) => c.id === id) }));
-  return agentUI.compare({ title, names, rows: offline ? [['Why', offline, offline]] : rows, choices, download: offline ? null : download });
+  return agentUI.compare({ title, names, rows: offline ? [['Why', offline, offline]] : rows, choices, download: offline ? null : download, share });
 }
 
 // The person it's talking to stops and turns to it, if they're drawn nearby.

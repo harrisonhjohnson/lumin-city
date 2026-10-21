@@ -14,6 +14,6 @@ const agentApi = () => ({
 
 export default defineConfig({
   server: { port: 5190, host: '127.0.0.1' },
-  build: { rollupOptions: { input: { main: 'index.html', lab: 'lab/index.html' } } },
+  build: { rollupOptions: { input: { main: 'index.html', play: 'play/index.html' } } },
   plugins: [agentApi()],
 });
