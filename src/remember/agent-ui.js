@@ -83,7 +83,8 @@ export function createAgentUI() {
     bar.setAttribute('role', 'toolbar');
     bar.setAttribute('aria-label', 'Run controls');
     root.append(bar);
-    return { setFocus, setPaused: showPaused, close() { bar.remove(); root.classList.remove('is-duel'); } };
+    const setSkip = (text) => { if (skip && skip.textContent !== text) skip.textContent = text; };
+    return { setFocus, setPaused: showPaused, setSkip, close() { bar.remove(); root.classList.remove('is-duel'); } };
   }
 
   // ---- a mind panel -------------------------------------------------------------------------

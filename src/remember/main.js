@@ -924,7 +924,8 @@ async function runAgent(s, rec = null, replayId = null, { at = null, follow = 0 
     onSpeed: (v) => { watch.speed = v; }, onPause: (p) => { watch.paused = p; },
     onStop: () => { watch.stopped = true; for (const sd of watch.sides) sd.abort?.abort(); },
     onFocus: (i) => focusSide(i),
-    onSkip: rec ? () => { watch.rush = true; watch.rushTo = null; } : null,
+    // Skipping always moves: it plays a paused replay on to the next choice, or to the end.
+    onSkip: rec ? () => { watch.rush = true; watch.rushTo = null; watch.paused = false; watch.bar.setPaused(false); } : null,
   });
   watch.bar = bar;
   const first = Math.min(follow, watch.sides.length - 1);
@@ -992,9 +993,10 @@ async function sideLoop(sd) {
     if (turn.dilemma) {
       panel.dilemma(turn.dilemma);
       // A link to one moment lands there and holds once the choice is made, so it can be read.
-      const landed = watch.rushTo === turn.dilemma.id && sd.i === watch.focus;
+      // Skipping stops at the next choice of the model being followed (or the one a link names).
+      const mine = sd.i === watch.focus, landed = mine && watch.rushTo === turn.dilemma.id;
       if (landed) sd.hold = true;
-      if (!watch.rushTo || landed) { watch.rush = false; watch.rushTo = null; }
+      if (mine && (!watch.rushTo || landed)) { watch.rush = false; watch.rushTo = null; }
     }
     sd.thinking = true;
     const entry = panel.turn(turn.time, turn.report);
@@ -1023,6 +1025,8 @@ async function sideLoop(sd) {
     const talk = r.tool?.name === 'decide' && res.ok ? { name: 'Its reason', line: String(r.tool.args.reason || '(none given)'), keep: true } : res.talk && { name: res.talk.who.name, line: res.talk.line };
     entry.act(res.label, res.result, res.ok, talk);
     if (sd.hold) { sd.hold = false; watch.paused = true; watch.bar.setPaused(true); }
+    const followed = watch.sides[watch.focus].agent;
+    if (watch.replay) watch.bar.setSkip(followed.dilemmas.every((d) => d.shown) && !followed.pending ? 'Skip to the end ⏭' : 'Next hard choice ⏭');
     panel.notebook(agent.notebook);
     sd.doing = res.label;
     if (res.talk && sd.i === watch.focus) faceAgent(res.talk.who);
