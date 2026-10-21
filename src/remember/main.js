@@ -917,7 +917,7 @@ async function runAgent(s, rec = null, replayId = null, { at = null, follow = 0 
   watch.sides = match.sides.map(dressSide);
   watch.brains = rec ? match.sides.map((sd) => watchSim.playback(rec, sd.i)) : null;
   const names = match.names, recorded = rec && new Date(rec.when).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  const told = s.watched ? ' Told its hard choices would be published.' : '';
+  const cue = watchSim.cueOf(s), told = cue ? ` ${agentSim.CUES[cue].told}` : '';
   for (const sd of watch.sides) sd.panel = agentUI.panel({ model: sd.model.label, goal: (s.own ? `Goal: ${s.own}` : `Goal: ${goal.label}. ${goal.text}`) + told, side: watch.duel && sd.i === 0 ? 'left' : 'right', badge: watch.duel ? 'AB'[sd.i] : '', replay: recorded });
   const bar = agentUI.controls({
     speeds: SPEEDS, speed: watch.speed, names: watch.duel ? names : [],

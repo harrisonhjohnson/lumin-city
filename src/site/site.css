@@ -97,7 +97,7 @@ h1 { margin: 0; font: 400 clamp(36px, 7vw, 64px)/0.98 var(--display); letter-spa
 .site-links { display: flex; gap: 16px; flex-wrap: wrap; }
 .site-links a { font: 700 14px/1 var(--label); letter-spacing: .12em; text-transform: uppercase; text-decoration: none; }
 .site-links a:hover { color: var(--red); }
-.site-links a:last-child { border-bottom: 2px solid var(--ink); }
+.site-links a[href="/play"] { border-bottom: 2px solid var(--ink); }
 
 .site-hero .lab-kicker { margin-top: 8px; }
 .site-cta { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 22px; }
