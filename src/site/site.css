@@ -180,3 +180,9 @@ h1 { margin: 0; font: 400 clamp(36px, 7vw, 64px)/0.98 var(--display); letter-spa
 }
 .site-head-note { margin: -4px 0 14px; font-size: 15px; opacity: .75; }
 .site-ladder-said { margin: 14px 0 0; padding: 12px 14px; background: var(--paper); border-left: 6px solid var(--b); font-size: 17px; }
+.site-travel-table { width: 100%; max-width: 30em; margin: 18px 0 0; border-collapse: collapse; font: 600 16px/1.2 var(--label); }
+.site-travel-table th, .site-travel-table td { padding: 8px 10px; border-bottom: 2px solid var(--ink); text-align: left; }
+.site-travel-table td { text-align: right; font-weight: 700; }
+.site-travel-table thead th { font-size: 13px; letter-spacing: .1em; text-transform: uppercase; }
+.site-travel-table thead th + th { text-align: right; }
+.site-travel-table tr.is-total { background: var(--paper); }
