@@ -186,3 +186,8 @@ h1 { margin: 0; font: 400 clamp(36px, 7vw, 64px)/0.98 var(--display); letter-spa
 .site-travel-table thead th { font-size: 13px; letter-spacing: .1em; text-transform: uppercase; }
 .site-travel-table thead th + th { text-align: right; }
 .site-travel-table tr.is-total { background: var(--paper); }
+.site-travel-go { margin-left: 8px; color: var(--b); text-decoration: none; }
+.site-travel-go:hover { color: var(--ink); }
+.site-travel-opus { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 12px 0 0; font: 700 15px/1.3 var(--label); }
+.site-travel-opus a { color: var(--ink); }
+.site-travel .site-all { margin-top: 16px; }
