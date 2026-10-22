@@ -6,7 +6,7 @@
 /* ---------- setup and end cards ---------- */
 
 .rm-ag-setup {
-  position: absolute; inset: 0;
+  position: absolute; inset: 0; z-index: 3;
   display: grid; place-items: center;
   padding: var(--rm-gutter);
   overflow-y: auto;
@@ -76,7 +76,7 @@
 /* ---------- the mind panel ---------- */
 
 .rm-ag-panel {
-  position: absolute;
+  position: absolute; z-index: 2;
   top: var(--rm-gutter); right: var(--rm-gutter); bottom: var(--rm-gutter);
   width: var(--rm-ag-panel);
   display: flex; flex-direction: column;
@@ -145,7 +145,7 @@
 /* ---------- the control bar ---------- */
 
 .rm-ag-bar {
-  position: absolute; top: var(--rm-gutter);
+  position: absolute; top: var(--rm-gutter); z-index: 2;
   left: calc((100% - var(--rm-ag-panel) - var(--rm-gutter)) / 2);
   translate: -50% 0;
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;
@@ -199,7 +199,7 @@
 /* ---------- the tag over its head ---------- */
 
 .rm-ag-tag {
-  position: absolute; left: 0; top: 0;
+  position: absolute; left: 0; top: 0; z-index: 1;
   max-width: 240px; padding: 5px 9px 4px;
   font: 700 13px/1.15 var(--rm-label); letter-spacing: .06em; text-transform: uppercase;
   background: var(--rm-ink); color: var(--rm-paper-hi);
@@ -234,3 +234,5 @@
 .rm-ag-saw { margin: 4px 0 0; }
 .rm-ag-saw summary { cursor: pointer; font: 600 12px/1.2 var(--rm-label); letter-spacing: .08em; text-transform: uppercase; color: var(--rm-ink-2); }
 .rm-ag-saw pre { margin: 6px 0 0; max-height: 240px; overflow: auto; padding: 8px; background: var(--rm-paper-hi); border: 1.5px solid var(--rm-ink); font: 11.5px/1.4 ui-monospace, Menlo, monospace; white-space: pre-wrap; }
+
+.rm-ag-dilemma .rm-ag-cue { margin: 6px 0 0; padding-top: 6px; border-top: 1px dashed currentColor; font-style: italic; }

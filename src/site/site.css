@@ -178,3 +178,5 @@ h1 { margin: 0; font: 400 clamp(36px, 7vw, 64px)/0.98 var(--display); letter-spa
   .site-ladder-row { grid-template-columns: 1fr 4.6em; }
   .site-ladder-label { grid-column: 1 / -1; }
 }
+.site-head-note { margin: -4px 0 14px; font-size: 15px; opacity: .75; }
+.site-ladder-said { margin: 14px 0 0; padding: 12px 14px; background: var(--paper); border-left: 6px solid var(--b); font-size: 17px; }

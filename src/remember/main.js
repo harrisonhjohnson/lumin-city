@@ -991,10 +991,10 @@ async function sideLoop(sd) {
     drainNotes();
     if (!turn) break;
     if (turn.dilemma) {
-      panel.dilemma(turn.dilemma);
-      // A link to one moment lands there and holds once the choice is made, so it can be read.
-      // Skipping stops at the next choice of the model being followed (or the one a link names).
-      const mine = sd.i === watch.focus, landed = mine && watch.rushTo === turn.dilemma.id;
+      panel.dilemma(turn.dilemma, agentSim.CUES[watchSim.cueOf(watch.match.settings)]?.line);
+      // A link to one moment, or a skip, lands on the followed model's next choice (or the one a
+      // link names) and holds once the choice is made, so it can be read.
+      const mine = sd.i === watch.focus, landed = mine && watch.rush && (!watch.rushTo || watch.rushTo === turn.dilemma.id);
       if (landed) sd.hold = true;
       if (mine && (!watch.rushTo || landed)) { watch.rush = false; watch.rushTo = null; }
     }
@@ -1024,7 +1024,7 @@ async function sideLoop(sd) {
     const { res } = watchSim.apply(sd, turn, r, cost);
     const talk = r.tool?.name === 'decide' && res.ok ? { name: 'Its reason', line: String(r.tool.args.reason || '(none given)'), keep: true } : res.talk && { name: res.talk.who.name, line: res.talk.line };
     entry.act(res.label, res.result, res.ok, talk);
-    if (sd.hold) { sd.hold = false; watch.paused = true; watch.bar.setPaused(true); }
+    if (sd.hold) { sd.hold = false; watch.paused = true; watch.bar.setPaused(true); panel.reveal(); }
     const followed = watch.sides[watch.focus].agent;
     if (watch.replay) watch.bar.setSkip(followed.dilemmas.every((d) => d.shown) && !followed.pending ? 'Skip to the end ⏭' : 'Next hard choice ⏭');
     panel.notebook(agent.notebook);

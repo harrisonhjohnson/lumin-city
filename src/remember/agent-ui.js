@@ -107,6 +107,7 @@ export function createAgentUI() {
     const stick = () => feed.scrollHeight - feed.scrollTop - feed.clientHeight < 80;
     const scroll = (was) => { if (was) feed.scrollTop = feed.scrollHeight; };
     const add = (node) => { const was = stick(); feed.append(node); scroll(was); return node; };
+    let lastChoice = null;
 
     return {
       turn(time, report) {
@@ -128,7 +129,10 @@ export function createAgentUI() {
           error(msg) { settle(); entry.append(el('p', 'rm-ag-res is-bad', msg)); },
         };
       },
-      dilemma({ title, text }) { add(h('section', 'rm-ag-dilemma', el('small', null, 'A hard choice'), el('b', null, title), el('p', null, text))); },
+      // A hard choice always scrolls into view, even if the reader scrolled up to open an old report.
+      dilemma({ title, text }, cue) { lastChoice = feed.appendChild(h('section', 'rm-ag-dilemma', el('small', null, 'A hard choice'), el('b', null, title), el('p', null, text), cue ? el('p', 'rm-ag-cue', cue) : null)); scroll(true); },
+      // Puts the latest hard choice at the top of the feed, with what the model did below it.
+      reveal() { if (lastChoice) feed.scrollTop = lastChoice.offsetTop - feed.offsetTop - 6; },
       note(text) { add(el('p', 'rm-ag-night', text)); },
       notebook(text) { notebook.textContent = text || 'Empty so far.'; },
       focus(on) { box.classList.toggle('is-focus', on); },
