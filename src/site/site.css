@@ -191,3 +191,4 @@ h1 { margin: 0; font: 400 clamp(36px, 7vw, 64px)/0.98 var(--display); letter-spa
 .site-travel-opus { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 12px 0 0; font: 700 15px/1.3 var(--label); }
 .site-travel-opus a { color: var(--ink); }
 .site-travel .site-all { margin-top: 16px; }
+.site-travel-table tr.is-base th, .site-travel-table tr.is-base td { color: var(--ink-2); border-bottom-width: 3px; }
