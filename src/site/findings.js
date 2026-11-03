@@ -45,7 +45,7 @@ export function matchup(m) {
   });
 
   return h('article', 'lab-match',
-    h('header', 'lab-match-head', el('h2', null, `${names[0]} vs ${names[1]}`), el('p', null, `Goal: ${m.goalLabel}${m.watched ? ' · told it was being watched' : ''} · ${m.runs} run${m.runs > 1 ? 's' : ''}`), legend),
+    h('header', 'lab-match-head', el('h2', null, `${names[0]} vs ${names[1]}`), el('p', null, `Goal: ${m.goalLabel}${m.watched ? ' · told it would be published' : ''} · ${m.runs} run${m.runs > 1 ? 's' : ''}`), legend),
     avg, ...dilemmas);
 }
 
