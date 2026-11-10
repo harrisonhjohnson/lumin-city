@@ -322,3 +322,17 @@ h1 { margin: 0; font: 400 clamp(36px, 7vw, 64px)/0.98 var(--display); letter-spa
   .site-next-bars li { grid-template-columns: minmax(0, 1fr) 4.5em; }
   .site-next-label { grid-column: 1 / -1; }
 }
+
+/* The answer: the question's short answer, one chart and four numbered findings, right under the hero. */
+.site-why { margin-top: 40px; padding: 22px 22px 20px; background: var(--paper-hi); border: 3px solid var(--ink); border-radius: 4px; box-shadow: 8px 8px 0 var(--red); scroll-margin-top: 70px; }
+.site-why h2 { margin: 4px 0 12px; font: 400 clamp(24px, 3.6vw, 34px)/1.05 var(--display); letter-spacing: .02em; text-transform: uppercase; }
+ul.site-next-bars { list-style: none; padding: 0; margin: 0; }
+.site-next-bars li.is-b .site-next-track i { background: var(--b); }
+.site-why-list { margin: 16px 0 0; padding-left: 22px; }
+.site-why-list li { margin: 8px 0; }
+.site-why-list a { color: inherit; text-decoration: none; }
+.site-why-list a:hover b { text-decoration: underline; }
+.site-section > .site-next-fig, .site-section > .site-eve { max-width: 760px; margin-top: 18px; }
+.site-points { max-width: 760px; margin: 14px 0 0; padding-left: 18px; }
+.site-points li { margin: 6px 0; }
+.site-why .lab-kicker { margin: 0; }
