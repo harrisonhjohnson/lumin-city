@@ -307,3 +307,18 @@ h1 { margin: 0; font: 400 clamp(36px, 7vw, 64px)/0.98 var(--display); letter-spa
   .site-twin-track i { width: 17px; height: 17px; margin: -8.5px 0 0 -8.5px; font-size: 10px; line-height: 13px; }
   .site-eve-down:not(.is-right) { translate: -35% 0; }
 }
+
+/* What we found next: plain bars, one per condition. */
+.site-next > p { margin: 0 0 12px; }
+.site-next-fig { margin: 14px 0; }
+.site-next-fig figcaption { font-weight: 700; margin-bottom: 6px; }
+.lab-how ul.site-next-bars { list-style: none; padding: 0; }
+.site-next-bars li { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 4.5em; gap: 10px; align-items: center; margin: 4px 0; }
+.site-next-track { height: 14px; border: 2px solid var(--ink); background: var(--paper); }
+.site-next-track i { display: block; height: 100%; background: var(--ink-2); }
+.site-next-bars li.is-accent .site-next-track i { background: var(--red); }
+.site-next-n { font: 700 13px/1 var(--label); text-align: right; white-space: nowrap; }
+@media (max-width: 560px) {
+  .site-next-bars li { grid-template-columns: minmax(0, 1fr) 4.5em; }
+  .site-next-label { grid-column: 1 / -1; }
+}
